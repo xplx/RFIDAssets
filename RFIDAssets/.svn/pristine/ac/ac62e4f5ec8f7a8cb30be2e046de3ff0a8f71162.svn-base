@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.AssetIoLibraryMapper">
+
+
+	<select id="countAsset" resultType="java.util.Map">
+		select
+		a.ASSET_TYPE,count(a.RFID_LABELNUM) count
+		from ASSET_IO_LIBRARY b,Asset_Info a where a.tag_id=b.tag_id and
+		b.INOUTLIBRARY='in' group by a.asset_type
+	</select>
+
+	<select id="findByAssetType" resultType="AssetIoLibrary"
+		parameterType="String">
+		SELECT a.* from ASSET_IO_LIBRARY a where
+		a.ASSET_TYPE=#{assetType} and a.INOUTLIBRARY='in'
+	</select>
+
+	<update id="updateOutput" parameterType="AssetIoLibrary">
+		UPDATE ASSET_IO_LIBRARY
+		a set a.OUTPUT=#{output},a.ACCREDIT_TIME=#{accredit_Time}
+		,a.USER_NAME=#{user_Name} where a.ASSETSNO=#{assetsno}
+	</update>
+
+	<select id="findIn" resultType="InOut" parameterType="String">
+		SELECT a.*,b.DEVICE_NUMBER,b.PLAN_DISPOSITION,b.ASSET_COMMENT from
+		ASSET_IO_LIBRARY a,ASSET_INFO b where a.INOUTLIBRARY='in' and
+		b.TAG_ID=a.TAG_ID
+		<if test="_parameter!=null and _parameter!=''">
+			and a.ASSET_TYPE=#{_parameter}
+		</if>
+	</select>
+
+	<select id="findOut" resultType="InOut" parameterType="String">
+		SELECT a.*,b.DEVICE_NUMBER,b.PLAN_DISPOSITION,b.ASSET_COMMENT from
+		ASSET_IO_LIBRARY a,ASSET_INFO b where a.INOUTLIBRARY='out' and
+		b.TAG_ID=a.TAG_ID
+
+		<if test="_parameter!=null and _parameter!=''">
+			and a.ASSET_TYPE=#{_parameter}
+		</if>
+	</select>
+
+	<insert id="insertAssetIoLibrary" parameterType="AssetIoLibrary">
+		INSERT into
+		ASSET_IO_LIBRARY VALUES(#{tag_Id}, #{assetsno}, #{devicename},
+		sysdate, #{inoutlibrary},
+		#{output}, #{dismantle}, #{user_Name},
+		#{accredit_Time}, #{asset_Type})
+	</insert>
+
+	<insert id="insertAssetInLibrary" parameterType="AssetIoLibrary">
+		INSERT into
+		ASSET_IO_LIBRARY (tag_id, assetsno, devicename, io_time, inoutlibrary,
+		output, asset_type)
+		VALUES(#{tag_Id}, #{assetsno}, #{devicename},
+		sysdate, #{inoutlibrary},
+		#{output},
+		#{asset_Type})
+	</insert>
+
+	<select id="findTagIdInOut" resultType="String"
+		parameterType="String">
+		SELECT ail.inoutlibrary
+		FROM asset_io_library ail
+		WHERE ail.tag_id=#{tag_id}
+	</select>
+	
+	<update id="updateInLibrary" parameterType="String">
+		UPDATE ASSET_IO_LIBRARY a set
+		a.INOUTLIBRARY='in' where
+		a.tag_id=#{tag_Id}
+	</update>
+
+
+	<select id="findTagId" resultType="AssetIoLibrary"
+		parameterType="String">
+		SELECT a.tag_id,a.INOUTLIBRARY from ASSET_IO_LIBRARY a
+		where
+		a.tag_id=#{tag_id}
+	</select>
+
+	<update id="update" parameterType="AssetIoLibrary">
+		UPDATE ASSET_IO_LIBRARY a set
+		a.INOUTLIBRARY=#{inoutlibrary} where
+		a.tag_id=#{tag_Id}
+	</update>
+
+	<select id="inByType" resultType="Map">
+		SELECT a.ASSET_TYPE,COUNT(*)
+		COUNT from ASSET_IO_LIBRARY a where
+		a.INOUTLIBRARY='in' GROUP BY
+		a.ASSET_TYPE
+	</select>
+	<select id="outByType" resultType="Map">
+		SELECT a.ASSET_TYPE,COUNT(*)
+		COUNT from ASSET_IO_LIBRARY a where
+		a.INOUTLIBRARY='out' GROUP BY
+		a.ASSET_TYPE
+	</select>
+
+
+</mapper>

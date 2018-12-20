@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.daoben.rfid.mapper.AssetTagInfoMapper">
+	<sql id="Base_Column_List">
+		TAG_ID, TAG_LIGHT, TAG_SHAKE, TAG_ELECTRIC,
+		TAG_DATE,TAG_PLACE
+	</sql>
+	<!-- 查询标签的所有信息 -->
+	<select id="selectAllTagInfo" resultType="AssetTagInfo">
+		select
+		ati.tag_id,ati.tag_date,ati.tag_place,ati.tag_lose
+		from asset_io_library aio ,asset_tag_info ati
+		where aio.tag_id = ati.tag_id
+		and ati.tag_lose ='0'
+		and aio.inoutlibrary='in'
+	</select>
+
+	<!-- 查询标签的电量报警 -->
+	<select id="selectTagInfoWarn" parameterType="String"
+		resultType="AssetTagInfo">
+		select
+		<include refid="Base_Column_List" />
+		from ASSET_TAG_INFO ati
+		WHERE ati.tag_id=#{tag_Id} AND
+		ati.tag_electric=1
+	</select>
+
+	<!-- 根据标签ID号查询单个标签信息 -->
+	<select id="selectByTagId" resultType="AssetTagInfo"
+		parameterType="java.lang.String">
+		select
+		<include refid="Base_Column_List" />
+		from ASSET_TAG_INFO
+		where TAG_ID = #{tag_Id}
+	</select>
+
+	<!-- 根据tag_id返回时间 -->
+	<select id="selectByTagIdTime" resultType="AssetTagInfo"
+		parameterType="java.lang.String">
+		select TAG_DATE
+		from ASSET_TAG_INFO
+		where TAG_ID =
+		#{tagId,jdbcType=VARCHAR}
+	</select>
+
+	<!-- 插入数据库信息 -->
+	<insert id="insertPartTagInfo" parameterType="AssetTagInfo">
+		insert into ASSET_TAG_INFO
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="tag_Id != null">
+				TAG_ID,
+			</if>
+			<if test="tag_Electric != null">
+				TAG_ELECTRIC,
+			</if>
+			<if test="tag_Date != null">
+				TAG_DATE,
+			</if>
+			<if test="tag_Place != null">
+				TAG_PLACE,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="tag_Id != null">
+				#{tag_Id},
+			</if>
+			<if test="tag_Electric != null">
+				#{tag_Electric},
+			</if>
+			<if test="tag_Date != null">
+				#{tag_Date},
+			</if>
+			<if test="tag_Place != null">
+				#{tag_Place},
+			</if>
+		</trim>
+	</insert>
+
+	<update id="updatePartByTagId" parameterType="AssetTagInfo">
+		update ASSET_TAG_INFO
+		<set>
+			<if test="tag_Electric != null">
+				TAG_ELECTRIC = #{tag_Electric},
+			</if>
+			<if test="tag_Place != null">
+				TAG_PLACE = #{tag_Place},
+			</if>
+			<if test="tag_Date != null">
+				TAG_DATE = #{tag_Date},
+			</if>
+		</set>
+		where TAG_ID = #{tag_Id}
+	</update>
+
+	<update id="updatePartLoseTagId" parameterType="String">
+		UPDATE
+		asset_tag_info SET tag_lose = 1 WHERE tag_id =#{tag_Id}
+	</update>
+	<delete id="deleteByTagId" parameterType="String">
+		delete from
+		ASSET_TAG_INFO
+		where TAG_ID = #{tag_Id}
+	</delete>
+
+	<!-- 更新所有标签信息 -->
+	<update id="updateAllTagIdInfo" parameterType="java.util.List">
+		update asset_tag_info at
+		set
+		at.tag_date = systimestamp
+		where tag_id in(
+		<foreach collection="list" item="list" separator=",">
+			#{list}
+		</foreach>
+		)		
+	</update>
+</mapper>

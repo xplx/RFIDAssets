@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.daoben.rfid.mapper.AssetIoNumberMapper">
+
+	<!-- 查询盘点差异数量数据 -->
+	<select id="selectAssetIoNumber" parameterType="SelectTime"
+		resultType="AssetIoNumber">
+		SELECT everyday_time, io_sum_count, warn_sum_count,
+		differ_sum_count
+		FROM asset_io_number a
+		<where>
+			<if test="beginTime!=null and beginTime!=''">
+				and #{beginTime} &lt; = to_char(a.everyday_time,'yyyymmdd')
+			</if>
+			<if test="endTime!=null and endTime!=''">
+				and to_char(a.everyday_time,'yyyymmdd') &lt;=#{endTime}
+			</if>
+			<if test="tag_place=null and tag_place!=''">
+				and a.tag_place=#{tag_place}
+			</if>
+		</where>
+	</select>
+
+	<!-- 插入数据库信息 -->
+	<insert id="insertAssetIoNumber" parameterType="AssetIoNumber">
+		INSERT INTO
+		asset_io_number
+		(everyday_time, io_sum_count, warn_sum_count,
+		differ_sum_count)
+		VALUES
+		(#{everyday_Time}, #{io_Sum_Count},
+		#{warn_Sum_Count},
+		#{differ_Sum_Count})
+	</insert>
+
+	<update id="updateAssetIoNumber" parameterType="AssetIoNumber">
+		UPDATE
+		asset_io_number
+		SET io_sum_count = #{io_Sum_Count},
+		warn_sum_count =
+		#{warn_Sum_Count},
+		differ_sum_count = #{differ_Sum_Count}
+		WHERE
+		to_char(everyday_time,'yyyymmdd')=#{everyday_time}
+	</update>
+
+</mapper>

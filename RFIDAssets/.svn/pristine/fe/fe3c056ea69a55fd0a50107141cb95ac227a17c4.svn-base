@@ -1,0 +1,57 @@
+package com.daoben.rfid.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+
+import com.daoben.rfid.model.AssetIoLibrary;
+
+/**
+ * @author 文
+ *
+ * @date   2017年3月1日下午2:59:53
+ */
+public interface AssetIoLibraryMapper {
+
+	public List<Map<String,Integer>> countAsset();
+	public List<AssetIoLibrary> findByAssetType(String assetType);
+	public int updateOutput(AssetIoLibrary assetIoLibrary) ;
+	/**
+	 * @param asset_Type 
+	 * @return
+	 */
+	public List<AssetIoLibrary> findIn(String asset_Type);
+	/**
+	 * @return
+	 */
+	public List<AssetIoLibrary> findOut(String asset_Type);
+	/**
+	 * @param assetIoLibrary 
+	 * 
+	 */
+	public int insert(AssetIoLibrary assetIoLibrary);
+	/**
+	 * 
+	 */
+	/**
+	 * @param assetIoLibrary
+	 * @return
+	 */
+	public int update(AssetIoLibrary assetIoLibrary);
+	/**
+	 * @param tag_id 
+	 * @return
+	 */
+	public List<AssetIoLibrary> findTagId(String tag_id);
+	/**
+	 * @return
+	 */
+	public List<Map<String,Object>> inByType();
+	/**
+	 * @return
+	 */
+	public List<Map<String,Object>> outByType();
+	
+	
+	
+}

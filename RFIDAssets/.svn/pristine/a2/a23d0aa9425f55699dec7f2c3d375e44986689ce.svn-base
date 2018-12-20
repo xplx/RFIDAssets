@@ -1,0 +1,89 @@
+package com.daoben.rfid.service;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+
+import com.daoben.rfid.mapper.AssetWarnMapper;
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.model.WarnInfo;
+
+/**
+ * @author wxp
+ *
+ */
+@Service
+public class AssetWarnService {
+
+	@Resource
+	private AssetWarnMapper warnMapper;
+
+	/**
+	 * @author wxp 查询总资产的信息
+	 */
+	public List<Map<String, String>> selectbyAssetInfo(String tag_Id) {
+
+		return warnMapper.selectbyAssetInfo(tag_Id);
+	}
+
+	/**
+	 * @author wxp 联合查询总资产的信息和报警信息
+	 */
+	public List<WarnInfo> unionAssetInfoAssetWarn() {
+
+		return warnMapper.unionAssetInfoAssetWarn();
+	}
+
+	/**
+	 * @author wxp 插入报警信息
+	 */
+	public int insertWarnInfo(AssetWarn warn) {
+
+		return warnMapper.insertWarnInfo(warn);
+	}
+
+	/**
+	 * @author wxp 更新报警信息
+	 */
+	public int updateAssetWarn(AssetWarn warn) {
+
+		return warnMapper.updateAssetWarn(warn);
+	}
+
+	/**
+	 * @author wxp 删除 报警信息
+	 */
+	public int deleteByTag_Id(String tag_Id) {
+
+		return warnMapper.deleteByTag_Id(tag_Id);
+	}
+
+	/**
+	 * @author wxp 删除 报警信息
+	 */
+	public int selectbyIoLibrary(String tag_Id) {
+
+		return warnMapper.selectbyIoLibrary(tag_Id);
+	}
+
+	/**
+	 * @author wxp 更新出库信息
+	 */
+	public int updateOutLibrary(String tag_Id) {
+
+		return warnMapper.updateOutLibrary(tag_Id);
+	}
+
+	/**
+	 * @param assetIoLibrary
+	 */
+	public int updateOUTPUT(AssetIoLibrary assetIoLibrary) {
+		// TODO Auto-generated method stub
+		return warnMapper.updateOUTPUT(assetIoLibrary);
+	}
+
+}

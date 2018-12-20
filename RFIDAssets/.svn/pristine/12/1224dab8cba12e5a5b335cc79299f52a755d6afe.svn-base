@@ -1,0 +1,13 @@
+package com.daoben.rfid.reader;
+
+public class RfidDLLServcie {
+	public static void main(String[] args) {
+
+		// TODO Auto-generated method stub
+
+		int sum = FRFP.INSTANCE.OpenReader("192.168.0.217","4002");
+
+		System.out.println(sum);
+
+	}
+}

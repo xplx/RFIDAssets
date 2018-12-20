@@ -1,0 +1,65 @@
+package com.daoben.rfid.reader;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.stereotype.Service;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.service.AssetWarnService;
+import com.daoben.rfid.service.IoLibraryService;
+import com.daoben.rfid.utils.ToStringSixteen;
+
+/*
+ * 4.用socket通讯写出多个客户端和一个服务器端的通讯，
+ * 要求客户发送数据后能够回显相同的数据（回显功能）（实用TCP方式）。
+ */
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+@Service
+public class TcpRfidTagTest {
+	@Resource
+	private ToStringSixteen toStringSixteen;
+
+	@Resource
+	private ReaderFunction readerFunction;
+
+	@Resource
+	private AssetWarnService asw;
+
+	@Resource
+	private IoLibraryService ioLibraryService;
+
+	static ServerSocket sendRfidWarn = null;
+
+	private Logger log = Logger.getLogger(this.getClass());
+
+	@Test
+	public void test() throws IOException {
+		scoketServer();
+	}
+	// 开启的tcp8888监听端口
+	public static void scoketServer() throws IOException {
+		ServerSocket server = new ServerSocket(8082);
+		while (true) {
+			// 未连通前线程阻塞，连通后开启一个socket通道线程后继续监听8888端口
+			Socket socket = server.accept();
+			System.out.println(socket.getInetAddress().getHostAddress() + "连接进入");
+			new SocketThread(socket).start();
+		}
+	}
+
+}
+

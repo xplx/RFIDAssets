@@ -1,0 +1,470 @@
+package com.daoben.rfid.reader;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Service;
+
+import com.daoben.rfid.service.AssetWarnService;
+import com.daoben.rfid.service.IoLibraryService;
+import com.daoben.rfid.utils.ToStringSixteen;
+
+@Service
+public class TcpRfidTag { // 创建类MyTcp
+	@Resource
+	private ToStringSixteen toStringSixteen;
+
+	@Resource
+	private ReaderFunction readerFunction;
+
+	@Resource
+	private AssetWarnService asw;
+
+	@Resource
+	private IoLibraryService ioLibraryService;
+
+	static ServerSocket sendRfidWarn = null;
+
+	private Logger log = Logger.getLogger(this.getClass());
+
+	/**
+	 * 读取RFID标签休眠时间调整
+	 */
+	public void delay_ms(int time) {
+		try {
+			Thread.sleep(1000 * time);// s
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 盘点RFID
+	 */
+	public void getRfidCheckA() {
+		int servPort = 8082;// 端口号
+		// Create a server socket to accept client connection request
+		ServerSocket servSocket = null;
+		Socket clientSocket = null;
+		InputStream in = null;
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		try {
+			servSocket = new ServerSocket(servPort);
+			while (true) {
+				clientSocket = servSocket.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				in = clientSocket.getInputStream();
+				// OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while ((recvMsgSize = in.read(receivBuf)) != -1) {
+					// String recString = new String(receivBuf, "ISO-8859-1");//
+					// System.out.println("显示字符串"+recString);// 获取收集数据
+					String recString = toStringSixteen.ByteToStriong(receivBuf);// 接收16进制数据
+					if (recvMsgSize == 20) {
+						String firstFlag = recString.substring(0, 4);// 获取TCP首标志
+						String finalFlag = recString.substring(36, 40);// 获取TCP尾标志
+						String Flag = firstFlag.concat(finalFlag); // 整合首尾标志
+						if (Flag.equals("7f7f7f7f")) {
+							delay_ms(5);
+							log.info("首尾标志正确");
+							String RfidId = recString.substring(4, 8);// 获取读写器的id号
+							log.info("盘点读写器id:" + RfidId);
+							/******** 获取标签ID号 ********/
+							String Htag_id = recString.substring(20, 22);// 标签id高字节
+							String Ltag_id = recString.substring(18, 20);// 标签id低字节
+							String Hexttag_id = Htag_id.concat(Ltag_id); // 整合标签号
+							int tag_id = Integer.parseInt(Hexttag_id, 16);// 获取标签ID号
+
+							/******** 获取标签电量状态 ********/
+							String HexElectric = recString.substring(22, 24);// 获取标签id状态字节
+							String Electric = toStringSixteen.HexStringToTwobinary(HexElectric);// 将16进制转换成2进制
+							String BElectric = Electric.substring(0, 1);// 标签电量位数
+							int BBElectric = Integer.valueOf(BElectric, 2);// 将
+							log.info("8082客户端数据：" + recString);
+							log.info("8082标签Tag_Id：" + tag_id);
+							log.info("8082标签电量：" + BElectric);
+							log.info("8082标签电量：" + BBElectric);
+
+							readerFunction.insertAssetInOutLibraryInfo(tag_id, BBElectric);// 入库和盘点
+							clientSocket.setSoTimeout(5000);// 设置超时时就断开连接
+							// readerFunction.updateRealTimeInfo(tag_id,
+							// BBElectric);// 盘点标签，监控电量
+							// readerFunction.MonitorTagIdLose();//
+							// 查询丢失报警，并且插入报警表中
+							// readerFunction.MonitoRelectricInfo(tag_id);//
+							// 查询电量报警
+
+						}
+					}
+					// out.write(receivBuf, 0, recvMsgSize);//回写数据
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				// 关闭资源
+				servSocket.close();
+				clientSocket.close();
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 盘点RFID
+	 */
+	public void getRfidCheckB() {
+		int servPort = 8083;// 端口号
+		// Create a server socket to accept client connection request
+		ServerSocket servSocket = null;
+		Socket clientSocket = null;
+		InputStream in = null;
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		try {
+			servSocket = new ServerSocket(servPort);
+			while (true) {
+				clientSocket = servSocket.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				in = clientSocket.getInputStream();
+				// OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while ((recvMsgSize = in.read(receivBuf)) != -1) {
+					// String recString = new String(receivBuf, "ISO-8859-1");//
+					// System.out.println("显示字符串"+recString);// 获取收集数据
+					String recString = toStringSixteen.ByteToStriong(receivBuf);// 接收16进制数据
+					if (recvMsgSize == 20) {
+						String firstFlag = recString.substring(0, 4);// 获取TCP首标志
+						String finalFlag = recString.substring(36, 40);// 获取TCP尾标志
+						String Flag = firstFlag.concat(finalFlag); // 整合首尾标志
+						if (Flag.equals("7f7f7f7f")) {
+							delay_ms(5);
+							log.info("首尾标志正确");
+							String RfidId = recString.substring(4, 8);// 获取读写器的id号
+							log.info("盘点读写器id:" + RfidId);
+							/******** 获取标签ID号 ********/
+							String Htag_id = recString.substring(20, 22);// 标签id高字节
+							String Ltag_id = recString.substring(18, 20);// 标签id低字节
+							String Hexttag_id = Htag_id.concat(Ltag_id); // 整合标签号
+							int tag_id = Integer.parseInt(Hexttag_id, 16);// 获取标签ID号
+
+							/******** 获取标签电量状态 ********/
+							String HexElectric = recString.substring(22, 24);// 获取标签id状态字节
+							String Electric = toStringSixteen.HexStringToTwobinary(HexElectric);// 将16进制转换成2进制
+							String BElectric = Electric.substring(0, 1);// 标签电量位数
+							int BBElectric = Integer.valueOf(BElectric, 2);// 将
+							log.info("8083客户端数据：" + recString);
+							log.info("8083标签Tag_Id：" + tag_id);
+							log.info("8083标签电量：" + BElectric);
+							log.info("8083标签电量：" + BBElectric);
+							readerFunction.insertAssetInOutLibraryInfo(tag_id, BBElectric);// 入库和盘点
+							clientSocket.setSoTimeout(5000);// 设置超时时就断开连接
+							// readerFunction.updateRealTimeInfo(tag_id,
+							// BBElectric);// 盘点标签，监控电量
+							// readerFunction.MonitorTagIdLose();//
+							// 查询丢失报警，并且插入报警表中
+							// readerFunction.MonitoRelectricInfo(tag_id);//
+							// 查询电量报警
+
+						}
+					}
+					// out.write(receivBuf, 0, recvMsgSize);//回写数据
+				}				
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				// 关闭资源
+				servSocket.close();
+				clientSocket.close();
+				in.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * 盘点RFID
+	 */
+	public void getRfidCheckC() {
+		int servPort = 8084;// 端口号
+		// Create a server socket to accept client connection request
+		ServerSocket servSocket = null;
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		try {
+			servSocket = new ServerSocket(servPort);
+			while (true) {
+				Socket clientSocket = servSocket.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				InputStream in = clientSocket.getInputStream();
+				// OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while ((recvMsgSize = in.read(receivBuf)) != -1) {
+					// String recString = new String(receivBuf, "ISO-8859-1");//
+					// System.out.println("显示字符串"+recString);// 获取收集数据
+					String recString = toStringSixteen.ByteToStriong(receivBuf);// 接收16进制数据
+					if (recvMsgSize == 20) {
+						String firstFlag = recString.substring(0, 4);// 获取TCP首标志
+						String finalFlag = recString.substring(36, 40);// 获取TCP尾标志
+						String Flag = firstFlag.concat(finalFlag); // 整合首尾标志
+						if (Flag.equals("7f7f7f7f")) {
+							delay_ms(1);
+							log.info("首尾标志正确");
+							String RfidId = recString.substring(4, 8);// 获取读写器的id号
+							log.info("读写器id:" + RfidId);
+							/******** 获取标签ID号 ********/
+							String Htag_id = recString.substring(20, 22);// 标签id高字节
+							String Ltag_id = recString.substring(18, 20);// 标签id低字节
+							String Hexttag_id = Htag_id.concat(Ltag_id); // 整合标签号
+							int tag_id = Integer.parseInt(Hexttag_id, 16);// 获取标签ID号
+
+							/******** 获取标签电量状态 ********/
+							String HexElectric = recString.substring(22, 24);// 获取标签id状态字节
+							String Electric = toStringSixteen.HexStringToTwobinary(HexElectric);// 将16进制转换成2进制
+							String BElectric = Electric.substring(0, 1);// 标签电量位数
+							int BBElectric = Integer.valueOf(BElectric, 2);// 将
+							log.info("8082客户端数据：" + recString);
+							log.info("8082标签Tag_Id：" + tag_id);
+							log.info("8082标签电量：" + BElectric);
+							log.info("8082标签电量：" + BBElectric);
+							readerFunction.updateRealTimeInfo(tag_id, BBElectric);// 盘点标签，监控电量
+							// readerFunction.MonitorTagIdLose();//
+							// 查询丢失报警，并且插入报警表中
+							// readerFunction.MonitoRelectricInfo(tag_id);//
+							// 查询电量报警
+
+						}
+					}
+					// out.write(receivBuf, 0, recvMsgSize);//回写数据
+				}
+				// clientSocket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 接收出库读写器数据
+	 */
+	public void getRfidOutPutA() {
+
+		int servPort = 8085;// 端口号
+		// Create a server socket to accept client connection request
+		ServerSocket servSocket = null;
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		try {
+			servSocket = new ServerSocket(servPort);
+			while (true) {
+				Socket clientSocket = servSocket.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				InputStream in = clientSocket.getInputStream();
+				// OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while ((recvMsgSize = in.read(receivBuf)) != -1) {
+					// String recString = new String(receivBuf, "ISO-8859-1");//
+					// System.out.println("显示字符串"+recString);// 获取收集数据
+					if (recvMsgSize == 20) {
+						String recString = toStringSixteen.ByteToStriong(receivBuf);// 接收16进制数据
+						String firstFlag = recString.substring(0, 4);// 获取TCP首标志
+						String finalFlag = recString.substring(36, 40);// 获取TCP尾标志
+						String Flag = firstFlag.concat(finalFlag); // 整合标签号
+
+						if (Flag.equals("7f7f7f7f")) {
+							delay_ms(1);// 延时
+							log.info("首尾标志正确");
+							String RfidId = recString.substring(4, 8);// 获取读写器的id号
+							log.info("读写器id:" + RfidId);
+							/******** 出库IN获取标签ID号 ********/
+							String Htag_id = recString.substring(20, 22);// 标签id高字节
+							String Ltag_id = recString.substring(18, 20);// 标签id低字节
+							String Hexttag_id = Htag_id.concat(Ltag_id); // 整合标签号
+							int tag_id = Integer.parseInt(Hexttag_id, 16);// 获取标签ID号
+
+							log.info("出库读写器");
+							log.info("8085客户端数据：" + recString);
+							log.info("8085标签Tag_Id：" + tag_id);
+
+							/* 单个读写器使用，做出库处理 */
+							// readerFunction.MonitorWarnInfo(tag_id);// 监控出库报警
+							// asw.updateOutLibrary(tag_id + "");// 更改出库状态
+							readerFunction.insertReadeIoTime("192.168.0.217", tag_id, "in");// 插入实时进出库数据,用于进出库数据判断
+							/* 两个读写器使用，做进出判断 */
+							// if (RfidId.equals("d6e7")) {
+							// readerFunction.insertReadeIoTime("192.168.0.217",
+							// tag_id, "out");// 插入实时进出库数据,用于进出库数据判断
+							// } else if (RfidId.equals("d6e8")) {
+							// readerFunction.insertReadeIoTime("192.168.0.218",
+							// tag_id, "in");// 插入实时进出库数据,用于进出库数据判断
+							// }
+							ioLibraryService.insert();// 判断进出库标签
+							readerFunction.MonitorWarnInfo(tag_id);// 监控出库报警和插入报警信息，并做出推送
+							// readerFunction.MonitorAllWarnInfo();//查询出库报警信息，服务器开
+						}
+						// out.write(receivBuf, 0, recvMsgSize);//回写数据
+					}
+				}
+				// clientSocket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 接收出库读写器数据
+	 */
+	public void getRfidOutPutB() {
+
+		int servPort = 8086;// 端口号
+		// Create a server socket to accept client connection request
+		ServerSocket servSocket = null;
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		try {
+			servSocket = new ServerSocket(servPort);
+			while (true) {
+				Socket clientSocket = servSocket.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				InputStream in = clientSocket.getInputStream();
+				// OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while ((recvMsgSize = in.read(receivBuf)) != -1) {
+					// String recString = new String(receivBuf, "ISO-8859-1");//
+					// System.out.println("显示字符串"+recString);// 获取收集数据
+					if (recvMsgSize == 20) {
+						String recString = toStringSixteen.ByteToStriong(receivBuf);// 接收16进制数据
+						String firstFlag = recString.substring(0, 4);// 获取TCP首标志
+						String finalFlag = recString.substring(36, 40);// 获取TCP尾标志
+						String Flag = firstFlag.concat(finalFlag); // 整合标签号
+
+						if (Flag.equals("7f7f7f7f")) {
+							delay_ms(1);// 延时
+							log.info("首尾标志正确");
+							/******** 获取读写器ID号 ********/
+							String RfidId = recString.substring(4, 8);// 获取读写器的id号
+							log.info("出库OUT读写器id:" + RfidId);
+							/******** 获取标签ID号 ********/
+							String Htag_id = recString.substring(20, 22);// 标签id高字节
+							String Ltag_id = recString.substring(18, 20);// 标签id低字节
+							String Hexttag_id = Htag_id.concat(Ltag_id); // 整合标签号
+							int tag_id = Integer.parseInt(Hexttag_id, 16);// 获取标签ID号
+
+							log.info("出库读写器");
+							log.info("8086客户端数据：" + recString);
+							log.info("8086标签Tag_Id：" + tag_id);
+
+							/* 单个读写器使用，做出库处理 */
+							// readerFunction.MonitorWarnInfo(tag_id);// 监控出库报警
+							// asw.updateOutLibrary(tag_id + "");// 更改出库状态
+
+							readerFunction.insertReadeIoTime("192.168.0.216", tag_id, "out");// 插入实时进出库数据,用于进出库数据判断
+							/* 两个读写器使用，做进出判断 */
+							// if (RfidId.equals("d6e7")) {
+							// readerFunction.insertReadeIoTime("192.168.0.216",
+							// tag_id, "out");// 插入实时进出库数据,用于进出库数据判断
+							// } else if (RfidId.equals("d6e8")) {
+							// readerFunction.insertReadeIoTime("192.168.0.218",
+							// tag_id, "in");// 插入实时进出库数据,用于进出库数据判断
+							// }
+							ioLibraryService.insert();// 插入判断进出库标签
+							readerFunction.MonitorWarnInfo(tag_id);// 监控出库报警和插入报警信息，并做出推送
+							// readerFunction.MonitorAllWarnInfo();//查询出库报警信息，服务器开
+						}
+						// out.write(receivBuf, 0, recvMsgSize);//回写数据
+					}
+				}
+				// clientSocket.close();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 接收出库读写器数据
+	 */
+	public void SendRfidWarnInfo() {
+
+		int servPort = 8087;// 端口号
+		int countLose = 0;
+		// Create a server socket to accept client connection request
+
+		int recvMsgSize = 0;
+		byte[] receivBuf = new byte[20];
+		byte[] SendWarn = { 0x1 };
+		try {
+			if (sendRfidWarn == null) {
+				sendRfidWarn = new ServerSocket(servPort);
+			}
+			while (true) {
+				Socket clientSocket = sendRfidWarn.accept();
+				SocketAddress clientAddress = clientSocket.getRemoteSocketAddress();
+				System.out.println("Handling client at " + clientAddress);
+				InputStream in = clientSocket.getInputStream();
+				OutputStream out = clientSocket.getOutputStream();
+				// receive until client close connection,indicate by -l return
+				while (true) {
+					delay_ms(5);// 13秒查询一次报警信息
+					log.info("查询报警信息");
+					countLose++;
+					/********* 资产出库未授权报警 *************/
+					int Warn = readerFunction.MonitorAllWarnInfoTcp();
+					if (Warn != 0) {// 查询是否发生报警
+						log.info("准备发送出库报警信息");
+						out.write(SendWarn, 0, 1);// 发送报警信息
+						log.info("发送出库报警信息成功");
+						delay_ms(8);// 8s
+					}
+
+					/********* 资产丢失报警 *************/
+					if (countLose == 50) {
+						int WarnLose = asw.selectbyLoseAssetInfo();// 查询丢失报警，并且插入报警表中
+						if (WarnLose > 0) {
+							log.info("准备发送丢失报警信息");
+							out.write(SendWarn, 0, 1);// 发送报警信息
+							log.info("发送报丢失警信息成功");
+							delay_ms(8);// 8s
+						}
+					}
+				}
+				/*
+				 * while ((recvMsgSize = in.read(receivBuf)) != -1) { String
+				 * recString = new String(receivBuf, "ISO-8859-1");//
+				 * log.info("接收到客户端报警查询" + recString);// 获取收集数据 int Warn =
+				 * readerFunction.MonitorAllWarnInfo(); if (Warn != 0) {//
+				 * 查询是否发生报警 delay_ms(5);// 10s out.write(SendWarn, 0, 1);//
+				 * 发送报警信息 } // clientSocket.close();// 关闭客户端 }
+				 */
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+}

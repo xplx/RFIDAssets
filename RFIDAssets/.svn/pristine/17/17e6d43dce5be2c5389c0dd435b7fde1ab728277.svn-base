@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.daoben.rfid.mapper.AssetInfoMapper">
+
+	<select id="findAll" resultType="AssetInfo">
+		select * from asset_info
+	</select>
+
+	<select id="countAsset" resultType="java.util.Map">
+		select a.ASSET_TYPE,count(a.RFID_LABELNUM) count from ASSET_INFO a  where a.tag_id is not null and a.TAG_ID not IN(SELECT b.tag_id from ASSET_IO_LIBRARY b) <!-- and a.TAG_ID not IN(SELECT c.tag_id from ASSET_IN_LIBRARY c) -->  group by a.asset_type
+	</select>
+	
+	<select id="findByAssetType" resultType="Map" parameterType="String">
+		SELECT * from ASSET_INFO a where a.ASSET_TYPE=#{assetType} and a.tag_id is not null and <!-- a.tag_id not in(select b.tag_id from ASSET_IN_LIBRARY b ) and --> a.TAG_ID not IN(SELECT c.tag_id from ASSET_IO_LIBRARY c)
+	</select>
+	<select id="findByAssetType2" resultType="Map"> 
+		SELECT t.tag_id from ASSET_IN_LIBRARY t
+	</select>
+	
+	
+	<select id="findByRfidLabelnum" resultType="java.util.Map" parameterType="String">
+	SELECT a.TAG_ID ,a.RFID_LABELNUM  ,a.ASSET_NAME ,a.ASSET_TYPE from ASSET_INFO a where a.RFID_LABELNUM=#{RFID_LABELNUM}
+	</select>
+
+</mapper>

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.AssetDeviceInfoMapper">
+
+	<sql id="Base_Column_List">
+		RFID_DEVICENAME, RFID_IP, DEVICE_PORT, DEVICE_STATE,
+		DEVICE_POSITION, DEVICE_PURPOSE,
+		DEVICE_KEEPER,
+		REGISTER_TIME,DEVICE_HANDLE
+	</sql>
+
+	<!-- 根据ip查询设备 -->
+	<select id="selectAllDeviceInfo" resultType="AssetDeviceInfo">
+		select
+		t.RFID_DEVICENAME, t.RFID_IP, t.DEVICE_PORT, t.DEVICE_STATE,
+		t.DEVICE_POSITION, t.DEVICE_PURPOSE,
+		t.DEVICE_KEEPER, t.REGISTER_TIME from asset_device_info t
+	</select>
+
+	<!-- 根据ip查询设备连接状态 -->
+	<select id="selectByDeviceHandle" parameterType="String"
+		resultType="AssetDeviceInfo">
+		SELECT adi.device_handle,adi.device_state
+		FROM asset_device_info adi
+		WHERE adi.rfid_ip = #{rfid_ip}
+	</select>
+
+	<!-- 根据ip查询设备 -->
+	<select id="selectByRfidIp" parameterType="String" resultType="AssetDeviceInfo">
+		select
+		<include refid="Base_Column_List" />
+		from ASSET_DEVICE_INFO where
+		rfid_ip=#{rfid_ip}
+	</select>
+
+	<!-- 根据ip查询设备 -->
+	<select id="selectOnlyState" parameterType="String" resultType="AssetDeviceInfo">
+		select
+		<include refid="Base_Column_List" />
+		from ASSET_DEVICE_INFO where
+		rfid_ip=#{rfid_ip}
+	</select>
+
+	<!-- 使用模糊查询所有设备 -->
+	<select id="dimSelectAllDeviceInfo" parameterType="String"
+		resultType="AssetDeviceInfo">
+		<bind name="rfid_ip" value="'%' + _parameter + '%'" />
+		select
+		<include refid="Base_Column_List" />
+		from ASSET_DEVICE_INFO
+		<where>
+			<if test="_parameter != null and _parameter=''">
+				rfid_ip like #{rfid_ip}
+			</if>
+		</where>
+	</select>
+
+	<!-- 更改RFID读写器连接状态 -->
+	<update id="updatePartDeviceState" parameterType="AssetDeviceInfo">
+		update ASSET_DEVICE_INFO
+		<set>
+			<if test="rfid_Devicename != null"> RFID_DEVICENAME = #{rfid_Devicename},
+			</if>
+			<if test="rfid_Ip != null"> RFID_IP = #{rfid_Ip},
+			</if>
+			<if test="device_Port != null "> DEVICE_PORT = #{device_Port},
+			</if>
+			<if test="device_State != null"> DEVICE_STATE = #{device_State},
+			</if>
+			<if test="device_Position != null"> DEVICE_POSITION = #{device_PositionR},
+			</if>
+			<if test="device_Purpose != null"> DEVICE_PURPOSE = #{device_Purpose},
+			</if>
+			<if test="device_Keeper != null"> DEVICE_KEEPER = #{device_Keeper},
+			</if>
+			<if test="register_Time != null"> REGISTER_TIME = #{register_Time},
+			</if>
+			<if test="device_handle != null"> DEVICE_HANDLE = #{device_handle},
+			</if>
+		</set>
+		where rfid_Ip = #{rfid_Ip}
+	</update>
+	<update id="updateByDeviceState" parameterType="AssetDeviceInfo">
+		update
+		ASSET_DEVICE_INFO
+		set RFID_IP = #{rfid_Ip},
+		DEVICE_STATE =
+		#{device_State},
+		REGISTER_TIME = #{register_Time}
+		where RFID_IP =
+		#{rfid_Ip}
+	</update>
+</mapper>

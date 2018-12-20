@@ -1,0 +1,104 @@
+package com.daoben.rfid.controller;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.model.SelectTime;
+import com.daoben.rfid.model.WarnInfo;
+import com.daoben.rfid.service.AssetTagInfoService;
+import com.daoben.rfid.service.AssetWarnService;
+import com.daoben.rfid.utils.AcquireTimeStamp;
+import com.daoben.rfid.utils.ResponsePWFactory;
+
+@Controller
+public class AssetWarnControll {
+
+	private Logger log = Logger.getLogger(this.getClass());
+
+	@Resource
+	private AssetWarnService aService;
+
+	@Resource
+	private ResponsePWFactory responsePWFactory;
+
+	@Resource
+	private AcquireTimeStamp ats;
+
+	@Resource
+	private AssetTagInfoService as;
+
+	/**
+	 * @author wxp 联合查询总资产的信息和报警信息
+	 * 
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/AssetWarn/unionAssetInfoAssetWarn", produces = "text/json;charset=UTF-8")
+	public String unionAssetInfoAssetWarn(String warnType, String loseTime) {// warnType1、出库。2、丢失。3、电量不足
+		SelectTime selectTime = new SelectTime(loseTime, null, null, null, warnType);
+		String responseMap = "";
+		try {
+			if (warnType.equals("1")) {
+				List<WarnInfo> list = aService.unionAssetInfoAssetWarn(warnType);
+				responseMap = responsePWFactory.responseMap("true", "查询出库报警成功", list, null);
+			}
+			if (warnType.equals("2")) {
+				List<WarnInfo> list = aService.unionAssetTagInfoAssetWarn(selectTime);
+				responseMap = responsePWFactory.responseMap("true", "查询盘点报警成功", list, null);
+			}
+			if (warnType.equals("3")) {
+				List<WarnInfo> list = aService.unionAssetInfoAssetWarn(warnType);
+				responseMap = responsePWFactory.responseMap("true", "查询电量不足报警成功", list, null);
+			}
+
+		} catch (Exception e) {
+			responseMap = responsePWFactory.responseMap("false", "查询报警失败", null, null);
+		}
+		log.info(responseMap);
+		return responseMap;
+	}
+
+	/**
+	 * @author wxp 报警处理结果说明
+	 * 
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/AssetWarn/updateAssetWarn", produces = "text/json;charset=UTF-8")
+	public String updateAssetWarn(String tag_Id, String output, String warn_Detil, String user_Name, String warnType) {
+		String responseMap = "";
+		try {
+			if (warnType.equals("1")) {
+				AssetWarn assetWarn = new AssetWarn();
+				assetWarn.setTag_Id(tag_Id);
+				assetWarn.setWarn_Type(output);// 处理表示出库未授权
+				assetWarn.setWarn_Detil(warn_Detil);// 处理说明
+				assetWarn.setWarn_Time(ats.getTimeStamp());
+				int goBack = aService.updateAssetWarn(assetWarn);// 更改时间和出库说明
+				AssetIoLibrary assetIoLibrary = new AssetIoLibrary();// 更改授权
+				assetIoLibrary.setOutput(Integer.parseInt(output));
+				assetIoLibrary.setTag_Id(tag_Id);
+				assetIoLibrary.setUser_Name(user_Name);
+				aService.updateOUTPUT(assetIoLibrary);// 授权报警出库，变为合理出库
+				as.updatePartLoseTagId(tag_Id);// 授权合理出库不做丢失
+				responseMap = responsePWFactory.responseMap("true", "出库报警授权成功", output, null);
+			} else if (warnType.equals("2")) {// 丢失报警授权
+				as.updatePartLoseTagId(tag_Id);// 授权合理出库不做丢失
+				responseMap = responsePWFactory.responseMap("true", "盘点丢失报警授权成功", output, null);
+			} else if (warnType.equals("3")) {// 丢失报警授权
+				as.updatePartLoseTagId(tag_Id);// 授权合理出库不做丢失
+				responseMap = responsePWFactory.responseMap("true", "电量不足报警授权成功", output, null);
+			}
+		} catch (Exception e) {
+			responseMap = responsePWFactory.responseMap("false", "报警授权失败", null, null);
+		}
+		log.info(responseMap);
+		return responseMap;
+	}
+}

@@ -1,0 +1,184 @@
+package com.daoben.rfid.service;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Service;
+
+import com.daoben.rfid.mapper.AssetWarnMapper;
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.model.SelectTime;
+import com.daoben.rfid.model.WarnInfo;
+import com.daoben.rfid.reader.ReaderFunction;
+
+/**
+ * @author wxp
+ *
+ */
+@Service
+public class AssetWarnService implements ApplicationContextAware {
+
+	@Resource
+	private AssetWarnMapper warnMapper;
+
+	@Resource
+	private ReadeIoTimeService readeIoTimeService;
+
+	@Resource
+	private ReaderFunction readerFunction;
+
+	private volatile Thread MonitorWarn;// 监控报警信息
+
+	private Logger log = Logger.getLogger(this.getClass());
+
+	/**
+	 * @author wxp 查询总资产的信息
+	 */
+	public List<Map<String, String>> selectbyAssetInfo(String tag_Id) {
+
+		return warnMapper.selectbyAssetInfo(tag_Id);
+	}
+
+	/**
+	 * @author wxp 联合查询总资产的信息和报警信息
+	 */
+	public List<WarnInfo> unionAssetInfoAssetWarn(String warn_Type) {
+
+		return warnMapper.unionAssetInfoAssetWarn(warn_Type);
+	}
+
+	/**
+	 * @author wxp 联合查询总资产的信息和报警信息
+	 */
+	public List<WarnInfo> unionAssetTagInfoAssetWarn(SelectTime warn_Type) {
+
+		return warnMapper.unionAssetTagInfoAssetWarn(warn_Type);
+	}
+
+	/**
+	 * @author wxp 插入报警信息
+	 */
+	public int insertWarnInfo(AssetWarn warn) {
+
+		return warnMapper.insertWarnInfo(warn);
+	}
+
+	/**
+	 * @author wxp 更新报警信息
+	 */
+	public int updateAssetWarn(AssetWarn warn) {
+
+		return warnMapper.updateAssetWarn(warn);
+	}
+
+	/**
+	 * @author wxp 删除 报警信息
+	 */
+	public int deleteByTag_Id(String tag_Id) {
+
+		return warnMapper.deleteByTag_Id(tag_Id);
+	}
+
+	/**
+	 * @author wxp 查询报警信息
+	 */
+	public int selectbyIoLibrary(String tag_Id) {
+
+		return warnMapper.selectbyIoLibrary(tag_Id);
+	}
+
+	/**
+	 * @author wxp 查询所有报警信息
+	 */
+	public List<AssetIoLibrary> selectAllIoLibrary() {
+
+		return warnMapper.selectAllIoLibrary();
+	}
+
+	/**
+	 * @author wxp 查询所有报警信息
+	 */
+	public int selectbyLoseAssetInfo() {
+
+		return warnMapper.selectbyLoseAssetInfo();
+	}
+
+	/**
+	 * @author wxp 更新出库信息
+	 */
+	public int updateOutLibrary(String tag_Id) {
+
+		return warnMapper.updateOutLibrary(tag_Id);
+	}
+	
+	/**
+	 * @author wxp 更新出库信息
+	 */
+	public int updateInLibrary(String tag_Id) {
+
+		return warnMapper.updateInLibrary(tag_Id);
+	}
+
+	/**
+	 * @param assetIoLibrary
+	 */
+	public int updateOUTPUT(AssetIoLibrary assetIoLibrary) {
+		// TODO Auto-generated method stub
+		return warnMapper.updateOUTPUT(assetIoLibrary);
+	}
+
+	/**
+	 * 读取RFID标签休眠时间调整
+	 */
+	public void delay_ms(int time) {
+		try {
+			Thread.sleep(time);// ms
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void RfidMonitorWarn() {
+		MonitorWarn = new Thread(new Runnable() {
+			int count = 0;
+
+			@Override
+			public void run() {
+				while (true) {
+					count++;
+					// readeIoTimeService.updateReadeIoTim();// 宝坻服务器使用，更新心跳包时间
+					// log.info("服务器心跳包更新");// run的方法体代表要执行的任务
+					if (count == 6) {
+						// readerFunction.MonitorHeartBeat();// 公司服务器使用,监视心跳包
+
+						readerFunction.MonitorAllWarnInfo();// 公司服务器使用,查询报警信息
+
+						log.info("监视心跳包是否超时");// run的方法体代表要执行的任务
+						count = 0;
+					}
+					delay_ms(600000);// 10s休眠时间
+				}
+			}
+		});
+		if (MonitorWarn.isAlive() == false) {// 判断线程是否启动
+			MonitorWarn.setDaemon(true);//
+			MonitorWarn.start();//
+		}
+
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext arg0) throws BeansException {
+		// TODO Auto-generated method stub
+		log.info("启动监视心跳包和出库报警");// run的方法体代表要执行的任务
+		// RfidMonitorWarn();
+	}
+
+}

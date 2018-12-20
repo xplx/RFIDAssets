@@ -1,0 +1,20 @@
+package com.daoben.rfid.mapper;
+
+
+
+import java.util.List;
+
+import com.daoben.rfid.model.AssetInLibrary;
+
+
+
+public interface AssetInLibraryMapper {
+
+	public int insertAsset(AssetInLibrary assetInLibrary) throws Exception;
+	public List<AssetInLibrary> findByTagId(String tag_Id);
+	/**
+	 * @param assetInLibrary
+	 * @return
+	 */
+	public int updateAsset(AssetInLibrary assetInLibrary) throws Exception;
+}

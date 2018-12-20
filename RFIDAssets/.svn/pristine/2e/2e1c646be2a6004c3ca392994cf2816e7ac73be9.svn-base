@@ -1,0 +1,220 @@
+package com.daoben.rfid.reader;
+
+import java.util.List;
+import javax.annotation.Resource;
+import org.junit.Test;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Service;
+import com.daoben.rfid.model.AssetDeviceInfo;
+import com.daoben.rfid.service.AssetDeviceInfoService;
+
+/**
+ * @author Administrator com.daoben.rfidassetam.reader.ReaderTag
+ */
+// @RunWith(SpringJUnit4ClassRunner.class)
+// @ContextConfiguration({ "/applicationContext.xml" })
+@Service
+public class ConnReadermpl implements ApplicationContextAware {
+
+	@Resource
+	private AssetDeviceInfoService aInfoService;
+
+	@Resource
+	private ReaderFunction readerFunction;
+
+	RFIDinterface rf = RFIDinterface.getInstance();// 实例化dll文件
+
+	private volatile Thread Reader;// 盘点读写器
+	private volatile Thread ReaderOut;// 出库读写器
+
+	/**
+	 * 读取RFID标签休眠时间调整
+	 */
+	public void delay_ms(int time) {
+		try {
+			Thread.sleep(time);// ms
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * 查询RFID设备所有信息
+	 */
+	@Test
+	public void selectAllDeviceInfo() {
+		List<AssetDeviceInfo> list = aInfoService.selectAllDeviceInfo();
+		for (AssetDeviceInfo e : list) {
+			System.out.println(e.toString());
+		}
+	}
+
+	public static void main(String[] args) {
+		ConnReadermpl impl = new ConnReadermpl();
+		System.out.println("test");
+		impl.AllReaderConn();
+	}
+
+	/**
+	 * 查询RFID设备，一次性连接所有读写器
+	 */
+	@Test
+	public void AllReaderConn() {
+		List<AssetDeviceInfo> list = aInfoService.selectAllDeviceInfo();
+		System.out.println(list);
+		for (AssetDeviceInfo e : list) {
+			switch (e.getRfid_Ip()) {// 通过IP获取相应的连接
+			case "192.168.0.215":// 盘点网线
+				ChoiceThread(e.getRfid_Ip(), e.getDevice_Port(), e.getDevice_State(), e.getDevice_Purpose());
+				break;
+			// case "192.168.0.217":// 盘点wifi
+			// ChoiceThread(e.getRfid_Ip(), e.getDevice_Port(),
+			// e.getDevice_State(), e.getDevice_Purpose());
+			// break;
+			// case "192.168.0.216"://出库网线
+			// ChoiceThread(e.getDevice_State(), e.getRfid_Ip(),
+			// e.getDevice_Port(), e.getDevice_Purpose());
+			// break;
+			case "192.168.0.218":// 出库wifi
+				ChoiceThreadOut(e.getRfid_Ip(), e.getDevice_Port(), e.getDevice_State(), e.getDevice_Purpose());
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	/**
+	 * 查询RFID设备，并且选择连接
+	 */
+	public void OptionReaderConn(final String ip, final String port, int state, String purpose) throws Exception {
+		switch (ip) {// 通过IP获取相应的连接
+		case "192.168.0.215":// 网线盘点
+			ChoiceThread(ip, port, state, purpose);
+			break;
+		case "192.168.0.216":// 网线出库
+			ChoiceThreadOut(ip, port, state, purpose);
+			break;
+		case "192.168.0.217":// wifi盘点
+			ChoiceThread(ip, port, state, purpose);
+			break;
+		case "192.168.0.218":// wifi出库
+			ChoiceThreadOut(ip, port, state, purpose);
+			break;
+		default:
+			break;
+		}
+	}
+
+	/**
+	 * @author wxp
+	 *
+	 */
+	public void ChoiceThread(final String ip, final String port, final int state, final String purpose) {
+		boolean flag = false;// 判断线程是否打开
+		if (state == 1) {
+			flag = true;
+			Reader = new Thread(new Runnable() {// run的方法体代表要执行的任务
+				@Override
+				public void run() {// 线程体
+					System.out.println("打开盘点线程");
+					int hcon = rf.OpenReaderExe(ip, port);// 打开读写器返回句柄
+					try {
+
+						AssetDeviceInfo aInfo = new AssetDeviceInfo();
+						aInfo.setRfid_Ip(ip);
+						aInfo.setDevice_State(state);// 默认打开读写器
+						aInfo.setDevice_Handle(hcon);
+						aInfoService.updatePartDeviceState(aInfo);// 更新读写器
+
+					} catch (Exception e) {
+						System.out.println("盘点读写器更新失败");
+					}
+
+					while (true) {
+						delay_ms(900);// 休眠时间
+						if (hcon != 0) {
+							//readerFunction.ReaderTagId(hcon);// 读取出库读写器标签
+						} else {
+							System.out.println("盘点读写器打开失败");
+						}
+					}
+				}
+			});
+			if (Reader.isAlive() == false) {// 判断线程是否启动
+				Reader.setDaemon(true);//
+				Reader.start();// 启动线程
+			}
+		} else if (state == 0) {
+			if (flag) {
+				try {
+					// readerFunction.selectCloseRfid(ip);//关闭读写器
+					// Reader.stop();//停止线程
+				} catch (Exception e) {
+					System.err.println("读写器关闭失败");
+				}
+			}
+		}
+	}
+
+	
+	public void ChoiceThreadOut(final String ip, final String port, final int state, final String purpose) {
+		boolean flag = false;// 判断线程是否打开
+		if (state == 1) {
+			flag = true;
+			ReaderOut = new Thread(new Runnable() {
+				// run的方法体代表要执行的任务
+				@Override
+				public void run() {
+					System.out.println("打开出库线程");
+					int hcon = rf.OpenReaderExe(ip, port);// 打开读写器返回句柄
+					try {
+						AssetDeviceInfo aInfo = new AssetDeviceInfo();
+						aInfo.setRfid_Ip(ip);
+						aInfo.setDevice_Handle(hcon);
+						aInfo.setDevice_State(state);// 默认打开读写器
+						aInfoService.updatePartDeviceState(aInfo);// 更新读写器
+					} catch (Exception e) {
+						System.out.println("出库读写器更新失败");
+					}
+					while (true) {
+
+						delay_ms(400);// 休眠时间
+						if (hcon != 0) {
+							//readerFunction.ReaderOutTagId(ip, hcon, purpose);// 读取出库读写器标签
+						} else {
+							System.out.println("出库读写器打开失败");
+						}
+					}
+				}
+			});
+			if (ReaderOut.isAlive() == false) {// 判断线程是否启动
+				ReaderOut.setDaemon(true);//
+				ReaderOut.start();//
+			}
+		} else if (state == 0) {
+			if (flag) {
+				System.out.println("关闭读写器");
+				try {
+					// readerFunction.selectCloseRfid(ip);//关闭读写器
+					// ReaderOut.stop();//停止线程
+				} catch (Exception e) {
+					System.out.println("读写器关闭失败");
+				}
+				flag = false;
+			}
+		}
+	}
+
+	@Override
+	public void setApplicationContext(ApplicationContext arg0) throws BeansException {
+		System.out.println("自动启动读写器读标签");
+		// AllReaderConn();
+		// ChoiceThreadOut("192.168.0.217", "4002", 1, "in");//进库
+		//ChoiceThread("192.168.0.217", "4002", 1, "monitor");
+		//ChoiceThreadOut("192.168.0.218", "4002", 1, "in");// 出库
+	}
+}

@@ -1,0 +1,315 @@
+package com.daoben.rfid.reader;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.DisposableBean;
+import org.springframework.stereotype.Service;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.common.push.JPushManager;
+import com.daoben.rfid.model.AssetDeviceInfo;
+import com.daoben.rfid.model.AssetInfoHis;
+import com.daoben.rfid.model.AssetTagInfo;
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.model.ReadeIoTime;
+import com.daoben.rfid.service.AssetDeviceInfoService;
+import com.daoben.rfid.service.AssetInfoHisService;
+import com.daoben.rfid.service.AssetTagInfoService;
+import com.daoben.rfid.service.AssetWarnService;
+import com.daoben.rfid.service.IoLibraryService;
+import com.daoben.rfid.service.ReadeIoTimeService;
+import com.daoben.rfid.utils.AcquireTimeStamp;
+import com.daoben.rfid.utils.SocketSend;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+@Service
+public class ReaderFunction implements DisposableBean {
+
+	@Resource
+	private AssetTagInfoService as;
+
+	@Resource
+	private AcquireTimeStamp ats;
+
+	@Resource
+	private AssetInfoHisService aihs;
+
+	@Resource
+	private AssetWarnService asw;
+
+	@Resource
+	private AssetDeviceInfoService aDIS;
+
+	@Resource
+	private SocketSend socketSend;
+
+	@Resource
+	private ReadeIoTimeService readeIoTimeService;
+
+	@Resource
+	private AssetTagInfoService tagInfoService;
+
+	@Resource
+	private IoLibraryService ioLibraryService;
+
+	private Logger log = Logger.getLogger(this.getClass());
+
+	RFIDinterface rf = RFIDinterface.getInstance();// 实例化dll文件
+
+	/*
+	 * @see 关闭服务器运行
+	 */
+	@Override
+	public void destroy() throws Exception {
+		System.out.println("Close Service");
+		 selectCloseRfid("192.168.0.217");// 关闭盘点读写器
+		 selectCloseRfid("192.168.0.218");// 关闭盘点读写器
+		log.info("Close Service");
+	}
+
+	/**
+	 * 读写器读取标签
+	 * 
+	 * @param:TagId
+	 */
+	public void ReaderTagId(int hcon) {
+		try {
+			RfidTagInfo rfidList = rf.ReaderTagIdExe(hcon);// 读取标签和电量
+			if (rfidList.wTagID != 0) {
+				log.info("盘点读写器");
+				log.info("monitor：  " + rfidList.wTagID);
+				log.info("monitor电量：  " + rfidList.bLowPow);
+				updateRealTimeInfo(rfidList.wTagID, rfidList.bLowPow);// 盘点标签，监控电量								
+				// MonitorTagId();// 查询丢失报警
+			} else {
+				log.info("读取盘点标签为空");
+			}
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
+	/**
+	 * 读写器读取出库标签
+	 * 
+	 * @param:TagId
+	 */
+	public void ReaderOutTagId(String ip, int hcon, String purpose) {
+		try {
+			int wTagID = rf.ReaderOnlyTagIdExe(hcon);// 读取标签和电量
+			if (wTagID != 0) {
+				log.info("出库读写器");
+				log.info("out：  " + wTagID);
+				asw.updateOutLibrary(wTagID + "");//更改出库状态
+				MonitorWarnInfo(wTagID);// 监控出库报警
+				// insertReadeIoTime(ip, wTagID, purpose);// 插入实时进出库数据,用于进出库数据判断
+				// ioLibraryService.insert();//判断进出库
+			} else {
+				log.info("读取出库标签为空");
+			}
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
+	/**
+	 * rfid读取标签，判断是否报警
+	 * 
+	 * @param:TagId
+	 */
+	public void MonitorWarnInfo(int tag_id) {
+		try {
+			int count = asw.selectbyIoLibrary(new Integer(tag_id).toString());// 查询出库报警信息
+			// List<AssetTagInfo> taglist = tagInfoService.selectTagInfoWarn(new
+			// Integer(tag_id).toString());// 查询盘点电量不足信息
+			if (count > 0) {
+				socketSend.send();// 发送硬件报警
+				insertWarnInfo(new Integer(tag_id).toString());// 插入报警信息
+				JPushManager jPushManager = new JPushManager();// 发送推送信息
+				jPushManager.warnMsgSendPush(new Integer(tag_id).toString() + "：资产出库未授权，请您及时处理！！！");
+			}
+			// else if (taglist != null) {
+			// // insertTagWarnInfo(new Integer(tag_id).toString());
+			// }
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+	}
+
+	/**
+	 * 关闭读写器
+	 * 
+	 * @param:TagId
+	 */
+	public void selectCloseRfid(String rfid_ip) throws Exception {
+		int hcon = 0;
+		try {
+			List<AssetDeviceInfo> lists = aDIS.selectByDeviceHandle(rfid_ip);
+			for (AssetDeviceInfo list : lists) {
+				hcon = list.getDevice_Handle();
+			}
+			rf.CloseReaderExe(hcon);// 关闭读写器
+			updateByDeviceState(rfid_ip, 0);// 更改读写器
+		} catch (Exception e) {
+			System.out.println("读写器更新失败");
+		}
+	}
+
+	/**
+	 * 更新读写器状态
+	 * 
+	 * @param:TagId
+	 */
+	public void updateByDeviceState(String ip, int state) throws Exception {
+		try {
+			AssetDeviceInfo aInfo = new AssetDeviceInfo();// 不能将模型注入
+			aInfo.setRfid_Ip(ip);
+			aInfo.setDevice_State(state);
+			aInfo.setRegister_Time(ats.getTimeStamp());
+			aDIS.updatePartDeviceState(aInfo);
+		} catch (Exception e) {
+			System.out.println("读写器更新失败");
+		}
+	}
+
+	/**
+	 * 插入出库报警信息表
+	 * 
+	 * @param:TagId
+	 */
+	public void insertWarnInfo(String tag_id) {
+		AssetWarn assetWarn = new AssetWarn();
+		assetWarn.setTag_Id(tag_id);
+		assetWarn.setWarn_Type("未授权出库");// 处理表示出库未授权
+		assetWarn.setWarn_Time(ats.getTimeStamp());
+		int flag = asw.updateAssetWarn(assetWarn);
+		if (flag == 0) {
+			asw.insertWarnInfo(assetWarn);
+		}
+	}
+
+	public void MonitorWarnInfo(String tag_id) {
+		int count = asw.selectbyIoLibrary(tag_id);// 查询是否有符合的数据
+		if (count > 0) {
+			insertWarnInfo(tag_id);// 加入报警信息
+			socketSend.send();// 发送硬件报警
+		}
+	}
+
+	/**
+	 * 插入标签电量不住报警信息表
+	 * 
+	 * @param:TagId
+	 */
+	public void insertTagWarnInfo(String tag_id) {
+		AssetWarn assetWarn = new AssetWarn();
+		assetWarn.setTag_Id(tag_id);
+		assetWarn.setWarn_Type("电量不足");// 处理表示出库未授权
+		assetWarn.setTag_Id("4");
+		assetWarn.setWarn_Type("未授权出库");// 处理表示出库未授权
+		assetWarn.setWarn_Detil("由于急用没法来得及处理");// 说明
+		assetWarn.setWarn_Time(ats.getTimeStamp());
+		System.out.println(asw.insertWarnInfo(assetWarn));
+	}
+
+	/**
+	 * 更新标签信息，如果标签不存在则插入标签信息
+	 * 
+	 * @param:TagId
+	 */
+	public void updateRealTimeInfo(int tag_ID, int tag_Electric) {
+		int flag = 0;
+		try {
+			AssetTagInfo aInfo = new AssetTagInfo();
+			aInfo.setTag_Id(tag_ID + "");
+			aInfo.setTag_Electric(tag_Electric);
+			aInfo.setTag_Place("宝坻");
+			aInfo.setTag_Date(ats.getTimeStamp());
+			flag = as.updatePartByTagId(aInfo);// 更新标签的信息
+			if (flag == 0) {
+				as.insertPartTagInfo(aInfo);
+			}
+
+		} catch (Exception e) {
+			// TODO: handle exception
+			System.out.println("插入标签信息失败");
+			System.out.println(e);
+		}
+	}
+
+	/**
+	 * 监视标签是否丢失报警 通过判断时间戳的差值
+	 * 
+	 * @param:TagId
+	 */
+	@Test
+	public void MonitorTagId() {
+		long vary;
+		Timestamp systemTime, databaseTime;
+		List<AssetTagInfo> TagIdAlarm;
+		List<AssetTagInfo> list = as.selectAllTagInfo();
+		for (AssetTagInfo e : list) {
+			databaseTime = e.getTag_Date();
+			systemTime = ats.getTimeStamp();
+			// vary = (time2.getTime() - time1.getTime()) / (1000*60);//时间差值是分钟
+			vary = (systemTime.getTime() - databaseTime.getTime()) / (1000);// 时间差值是秒
+			System.out.println("时间差值" + vary);
+			if (vary > 20000) {
+				TagIdAlarm = as.selectByTagId(e.getTag_Id());// 超过时间则将报警信息查询出来
+				System.out.println("报警标签信息：" + TagIdAlarm.toString());
+			}
+		}
+	}
+
+	/**
+	 * 插入标签流转信息表
+	 * 
+	 * @param:TagId
+	 */
+	public void insertAssetInfoHis() {
+
+		AssetInfoHis aHis = new AssetInfoHis();
+		String tag_Id = null, asset_Type = null;
+		List<Map<String, String>> list = aihs.selectByTagType("1");// 查询标签类型
+		for (int i = 0; i < list.size(); i++) {
+			Map<String, String> map = list.get(i);
+			tag_Id = map.get("TAG_ID");
+			asset_Type = map.get("ASSET_TYPE");
+		}
+		aHis.setTag_Id(tag_Id);
+		aHis.setOpdate(ats.getTimeStamp());
+		aHis.setPosition("办公室");
+		aHis.setAsset_Type(asset_Type);
+		aihs.insertAssetInfoHis(aHis);
+	}
+
+	/**
+	 * @function:将出库读写器读取标签写入数据库
+	 * @param rfid_Ip
+	 * @param tag_Id
+	 * @param purpose
+	 * 
+	 */
+	public void insertReadeIoTime(String rfid_Ip, int tag_Id, String purpose) {
+		try {
+			ReadeIoTime rTime = new ReadeIoTime();
+			rTime.setRfid_Ip(rfid_Ip);
+			rTime.setTag_Id(new Integer(tag_Id).toString());// 将整形转换成字符串
+			rTime.setDevice_Purpose(purpose);
+			rTime.setTag_Time(ats.getTimeStamp());
+			readeIoTimeService.insertReadeIoTime(rTime);
+		} catch (Exception e) {
+			// TODO: handle exception
+			log.error(e);
+		}
+	}
+}

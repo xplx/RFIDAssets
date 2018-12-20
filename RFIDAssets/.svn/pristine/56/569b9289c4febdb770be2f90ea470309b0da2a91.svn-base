@@ -1,0 +1,72 @@
+package com.daoben.rfid.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.SelectTime;
+
+/**
+ * @author 文
+ *
+ * @date 2017年3月1日下午2:59:53
+ */
+public interface AssetIoLibraryMapper {
+
+	public List<Map<String, Object>> countAsset();
+
+	public List<AssetIoLibrary> findByAssetType(String assetType);
+
+	public int updateOutput(AssetIoLibrary assetIoLibrary);
+
+	/**
+	 * @param selectTime
+	 * @return
+	 */
+	public List<Map<String, Object>> findIn(SelectTime selectTime);
+
+	public List<Map<String, Object>> findNotIn(SelectTime selectTime);
+
+	/**
+	 * @return
+	 */
+	public List<Map<String, Object>> findOut(String asset_Type);
+
+	/**
+	 * @param assetIoLibrary
+	 * 
+	 */
+	public int insertAssetIoLibrary(AssetIoLibrary assetIoLibrary);
+
+	/**
+	 * 
+	 */
+	public int insertAssetInLibrary(AssetIoLibrary assetIoLibrary);
+
+	public String findTagIdInOut(String tag_id);
+
+	/**
+	 * @param assetIoLibrary
+	 * @return
+	 */
+	public int update(AssetIoLibrary assetIoLibrary);
+
+	public int updateInLibrary(String tag_id);
+
+	/**
+	 * @param tag_id
+	 * @return
+	 */
+	public List<AssetIoLibrary> findTagId(String tag_id);
+
+	/**
+	 * @return
+	 */
+	public List<Map<String, Object>> inByType(SelectTime selectTime);
+
+	/**
+	 * @return
+	 */
+	public List<Map<String, Object>> outByType();
+
+}

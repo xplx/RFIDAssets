@@ -1,0 +1,20 @@
+package com.daoben.rfid.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import com.daoben.rfid.model.AssetInfo;
+/**
+ * @author 文
+ *
+ * 2017年2月14日下午1:09:30
+ */
+public interface AssetInfoMapper {
+
+	
+	public List<AssetInfo> findAll();
+	public List<Map<String,Integer>> countAsset();
+	public List<AssetInfo> findByAssetType(String assetType);
+	public Map<String, String> findByRfidLabelnum(String RfidLabelnum);
+	
+}

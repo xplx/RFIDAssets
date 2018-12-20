@@ -1,0 +1,91 @@
+package com.daoben.rfid.test;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.model.AssetTagInfo;
+import com.daoben.rfid.service.AssetTagInfoService;
+import com.daoben.rfid.utils.AcquireTimeStamp;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+public class AssetTagInfoTest {
+	@Autowired
+	private AssetTagInfoService as;
+
+	@Autowired
+	private AcquireTimeStamp ats;
+
+	@Test
+	public void selectAllTagId() {
+		System.out.println(as.selectAllTagInfo());
+	}
+
+	@Test
+	public void selectByTagId() {
+		System.out.println(as.selectByTagId("112266"));
+	}
+
+	@Test
+	public void selectTagInfoWarn() {
+		System.out.println(as.selectTagInfoWarn("112266"));
+	}
+
+	@Test
+	public void selectByTagIdTime() {
+
+		System.out.println(as.selectByTagIdTime("112266"));
+
+	}
+
+	@Test
+	public void insertPartTagInfo() {
+		AssetTagInfo aInfo = new AssetTagInfo();
+		aInfo.setTag_Id("11111");
+		aInfo.setTag_Electric(1);
+		aInfo.setTag_Place("宝坻");
+		aInfo.setTag_Date(ats.getTimeStamp());
+		as.insertPartTagInfo(aInfo);
+	}
+
+	@Test
+	public void updatePartByTagId() {
+		AssetTagInfo aInfo = new AssetTagInfo();
+		aInfo.setTag_Id("113344");
+		aInfo.setTag_Electric(0);
+		aInfo.setTag_Place("宝坻");
+		aInfo.setTag_Date(ats.getTimeStamp());
+		as.updatePartByTagId(aInfo);
+	}
+
+	@Test
+	public void updatePartLoseTagId() {
+		as.updatePartLoseTagId("22992");
+	}
+
+	@Test
+	public void updateAllTagIdInfo() {
+		Set<String> set = new HashSet<String>();
+		set.add("22928");
+		set.add("22928");
+		set.add("22992");
+		set.add("22963");
+		System.out.println(set);
+		List<String> lists = new ArrayList<String>();
+		lists.addAll(set);
+		as.updateAllTagIdInfo(lists);
+	}
+
+	@Test
+	public void deleteByTagId() {
+		as.deleteByTagId("11111");
+	}
+}

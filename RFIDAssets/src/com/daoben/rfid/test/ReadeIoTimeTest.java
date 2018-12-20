@@ -1,0 +1,63 @@
+package com.daoben.rfid.test;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.model.ReadeIoTime;
+import com.daoben.rfid.service.ReadeIoTimeService;
+import com.daoben.rfid.utils.AcquireTimeStamp;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+public class ReadeIoTimeTest {
+
+	@Resource
+	private ReadeIoTimeService ritservice;
+
+	@Resource
+	private AcquireTimeStamp aStamp;
+
+	/**
+	 * @author wxp 插入进出库标签的信息
+	 */
+	@Test
+	public void insertReadeIoTime() {
+		ReadeIoTime readeIoTime = new ReadeIoTime();
+		readeIoTime.setRfid_Ip("192.168.0.1");
+		readeIoTime.setDevice_Purpose("监视进出库");
+		readeIoTime.setTag_Id("123");
+		readeIoTime.setTag_Time(aStamp.getTimeStamp());
+		System.out.println(ritservice.insertReadeIoTime(readeIoTime));
+
+	}
+
+	/**
+	 * @author wxp 插入进出库标签的信息
+	 */
+	@Test
+	public void updateReadeIoTim() {
+
+		ritservice.updateReadeIoTim("66666");
+
+	}
+
+	/**
+	 * @author wxp 插入进出库标签的信息
+	 */
+	@Test
+	public void selectHeartBeat() {
+		List<ReadeIoTime> list=	ritservice.selectHeartBeat();
+		for (ReadeIoTime readeIoTime : list) {
+			
+		}
+
+		//System.out.println(ritservice.selectHeartBeat());
+
+	}
+}

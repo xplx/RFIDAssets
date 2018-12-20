@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.AssetInfoHisMapper">
+
+	<sql id="Base_Column_List">
+		TAG_ID, OPDATE, POSITION,ASSET_TYPE
+	</sql>
+
+	<select id="selectAssetInfoHisType" resultType="java.util.Map">
+		SELECT
+		aih.asset_type ,COUNT(aih.opdate) COUNT FROM asset_info_his aih GROUP
+		BY aih.asset_type
+	</select>
+
+	<select id="selectAllAssetInfoHis" resultType="InfoHis"
+		parameterType="String">
+		select
+		aih.TAG_ID, aih.OPDATE, aih.POSITION,aih.ASSET_TYPE,
+		a.RFID_LABELNUM,a.ASSET_NAME
+		FROM asset_info_his aih ,asset_info a
+		WHERE aih.asset_type=#{asset_type} and aih.TAG_ID=a.TAG_ID
+	</select>
+
+	<select id="selectByTagIdInfo" resultType="InfoHis"
+		parameterType="String">
+		select
+		aih.TAG_ID, aih.OPDATE, aih.POSITION,aih.ASSET_TYPE,
+		a.RFID_LABELNUM,a.ASSET_NAME
+		from ASSET_INFO_HIS aih ,asset_info a
+		where aih.TAG_ID = #{tag_Id} and aih.TAG_ID=a.TAG_ID
+	</select>
+
+	<select id="selectByTagType" resultType="Map" parameterType="String">
+		SELECT ai.tag_id,ai.asset_type
+		FROM asset_info ai
+		WHERE
+		ai.tag_id=#{tag_Id}
+	</select>
+
+	<!-- 通过map可以进行表的联合查询 -->
+	<select id="unionAssetIoLibrary" resultType="Map" parameterType="String">
+		SELECT 
+		aih.tag_id,aih.opdate,aih.asset_type,aih.position,ail.assetsno,ail.devicename
+		FROM asset_io_library ail,asset_info_his aih
+		WHERE
+		ail.asset_type = aih.asset_type
+		and aih.asset_type = #{asset_type }
+	</select>
+	
+	<!-- 通过map可以进行表的联合查询 -->
+	<select id="unionAssetIoLibraryTagId" resultType="Map"
+		parameterType="AssetInfoHis">
+		SELECT
+		  aih.tag_id,aih.opdate,aih.asset_type,aih.position,ail.assetsno,ail.devicename
+		FROM asset_info_his aih,asset_io_library ail
+		WHERE
+		ail.asset_type = aih.asset_type
+		and ail.tag_id = aih.tag_id
+		and aih.tag_id = #{tag_Id}
+		and aih.asset_type = #{asset_Type}
+	</select>
+
+	<insert id="insertAssetInfoHis" parameterType="AssetInfoHis">
+		insert into
+		ASSET_INFO_HIS
+		(TAG_ID, OPDATE, POSITION,ASSET_TYPE)
+		values (#{tag_Id},
+		#{opdate},
+		#{position},
+		#{asset_Type}
+		)
+	</insert>
+
+	<update id="updateAssetInfoHis" parameterType="AssetInfoHis">
+		update ASSET_INFO_HIS
+		<set>
+			<if test="opdate != null">
+				OPDATE = #{opdate},
+			</if>
+			<if test="position != null">
+				POSITION = #{position},
+			</if>
+		</set>
+		where TAG_ID = #{tag_Id}
+	</update>
+
+	<delete id="deleteAssetInfoHis" parameterType="String">
+		delete from
+		ASSET_INFO_HIS
+		where TAG_ID = #{tag_Id}
+	</delete>
+	<!-- 接口练习  -->
+	<select id="selectAll" resultType="InfoHis">
+	    select * from asset_info_his a
+	</select>
+	
+</mapper>

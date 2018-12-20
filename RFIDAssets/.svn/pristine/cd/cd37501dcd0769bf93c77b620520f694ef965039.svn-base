@@ -1,0 +1,77 @@
+package com.daoben.rfid.test;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.mapper.AssetInfoMapper;
+import com.daoben.rfid.model.AssetInfo;
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.service.AssetIoLibraryService;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+public class AssetIoLibraryTest {
+	@Resource
+	private AssetIoLibraryService assetIoLibraryService;
+	@Resource
+	private AssetInfoMapper assetInfoMapper;
+
+	@Test
+	public void insertAssetInLibrary() {
+		AssetIoLibrary assetIoLibrary = new AssetIoLibrary();
+		while (true) {
+			try {
+				List<AssetInfo> list = assetInfoMapper.findByTagId("24589");
+				for (AssetInfo assetInfo : list) {
+					assetIoLibrary.setTag_Id("24589");
+					assetIoLibrary.setAssetsno(assetInfo.getRfid_Labelnum());
+					assetIoLibrary.setDevicename(assetInfo.getAsset_Name());
+					assetIoLibrary.setAsset_Type(assetInfo.getAsset_Type());
+					assetIoLibrary.setInoutlibrary("in");
+					assetIoLibrary.setOutput(0);				
+					}
+				int flag = assetIoLibraryService.insertAssetInLibrary(assetIoLibrary);
+				if (flag == 0) {
+					assetIoLibraryService.updateInLibrary("24589");
+				}
+			} catch (Exception e) {
+				// TODO: handle exception
+				assetIoLibraryService.updateInLibrary("24589");
+			}
+		}
+	}
+
+	@Test
+	public void insertAllAssetInLibrary() {
+		AssetIoLibrary assetIoLibrary = new AssetIoLibrary();
+		List<AssetInfo> lists = assetInfoMapper.findAll();
+		for (AssetInfo assetInfo : lists) {
+			assetIoLibrary.setTag_Id(assetInfo.getTag_Id());
+			assetIoLibrary.setAssetsno(assetInfo.getRfid_Labelnum());
+			assetIoLibrary.setDevicename(assetInfo.getAsset_Name());
+			assetIoLibrary.setAsset_Type(assetInfo.getAsset_Type());
+			assetIoLibrary.setInoutlibrary("in");
+			assetIoLibrary.setOutput(0);
+			assetIoLibraryService.insertAssetInLibrary(assetIoLibrary);
+		}
+	}
+
+	@Test
+	public void assetIoLibraryMapper() {
+
+		System.out.println(assetIoLibraryService.findTagIdInOut("24555"));
+		System.out.println(assetIoLibraryService.selectSumCountAsset());
+	}
+
+	@Test
+	public void updateInLibrary() {
+
+		assetIoLibraryService.updateInLibrary("24654");
+	}
+}

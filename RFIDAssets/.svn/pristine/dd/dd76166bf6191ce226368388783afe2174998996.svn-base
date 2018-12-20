@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.AssetInventoryMapper">
+<insert id="insertCheck">
+
+	INSERT into ASSET_CHECK c(c.tag_id,c.check_state)SELECT a.TAG_ID,0 from ASSET_IO_LIBRARY a where not EXISTS(SELECT b.tag_id from ASSET_CHECK b where a.TAG_ID=b.tag_id) 
+</insert>
+	<select id="findAssetInventoryData" resultType="java.util.Map" parameterType="java.lang.String">
+	
+	select c.tag_id,a.ASSETSNO, a.DEVICENAME, a.asset_type,c.user_name,c.CHECK_STATE,c.CHECK_DETIL  from ASSET_IO_LIBRARY a, ASSET_CHECK c where a.TAG_ID=c.tag_id and a.asset_type = #{asset_type} and a.INOUTLIBRARY='in'
+	
+	</select>
+	
+	
+	<select id="findAssetTypeData" resultType="java.util.Map">
+		select count(*) TYPEcount ,ASSET_TYPE ASSETTYPE from Asset_Info group by asset_type
+	</select>
+	
+	<select id="findByTagid" resultType="java.lang.String" parameterType="java.lang.String">
+	SELECT a.IMAGE_PATH from ASSET_IN_LIBRARY a where a.TAG_ID=#{TAG_ID}
+	</select>
+</mapper>

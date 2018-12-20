@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.ReadeIoTimeMapper">
+
+
+	<select id="findInTime" resultType="ReadeIoTime" parameterType="String">
+		SELECT r.tag_id,max(r.TAG_TIME) TAG_TIME FROM READE_IO_TIME r where
+		r.DEVICE_PURPOSE='in' and r.tag_id = #{tag_Id} GROUP BY r.TAG_ID ORDER
+		BY r.TAG_ID
+
+	</select>
+
+
+	<select id="findOutTime" resultType="ReadeIoTime" parameterType="String">
+		SELECT
+		r.tag_id,max(r.TAG_TIME) TAG_TIME FROM READE_IO_TIME r
+		where
+		r.DEVICE_PURPOSE='out' and r.tag_id = #{tag_Id} GROUP BY r.TAG_ID
+		ORDER BY r.TAG_ID
+	</select>
+
+	<select id="findAll" resultType="ReadeIoTime">
+		SELECT * from (SELECT
+		r.tag_id,max(r.TAG_TIME) intime FROM READE_IO_TIME r
+		where
+		r.DEVICE_PURPOSE='in' GROUP BY r.tag_id ORDER BY r.TAG_ID) a
+		,(SELECT
+		r.tag_id,max(r.TAG_TIME) outtime FROM READE_IO_TIME r where
+		r.DEVICE_PURPOSE='out' GROUP BY r.tag_id ORDER BY r.TAG_ID) b WHERE
+		a.tag_id=b.Tag_id ORDER BY a.tag_id
+
+	</select>
+
+	<select id="getIOTime" parameterType="ReadeIoTime" resultType="java.sql.Timestamp">
+		SELECT min(r.tag_time) from READE_IO_TIME r where
+		r.DEVICE_PURPOSE=#{device_Purpose} and r.tag_id=#{tag_Id}
+	</select>
+
+	<insert id="insertReadeIoTime" parameterType="ReadeIoTime">
+		insert into
+		READE_IO_TIME (RFID_IP, DEVICE_PURPOSE, TAG_ID,
+		TAG_TIME)
+		values
+		(#{rfid_Ip}, #{device_Purpose},
+		#{tag_Id},
+		#{tag_Time})
+	</insert>
+</mapper>

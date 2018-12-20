@@ -1,0 +1,130 @@
+package com.daoben.rfid.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.daoben.rfid.model.AssetInfoHis;
+import com.daoben.rfid.model.InfoHis;
+import com.daoben.rfid.service.AssetInfoHisService;
+import com.daoben.rfid.utils.ResponsePWFactory;
+
+@Controller
+public class AssetInfoHisController {
+
+	private Logger log = Logger.getLogger(this.getClass());
+	
+	@Resource
+	private AssetInfoHisService as;
+
+	@Resource
+	private ResponsePWFactory responsePWFactory;
+
+	/**
+	 * 
+	 * @Title: leon.chen
+	 * @Description: 资产类型总数查询
+	 * @param @param
+	 *            null
+	 * @param @return
+	 *            设定文件
+	 * @return String 返回类型
+	 * @date 2017年2月17日 上午9:23:31
+	 * url:http://192.168.0.160:8080/RFIDAssets/AssetInfoHis/selectAssetInfoHisType
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/AssetInfoHis/selectAssetInfoHisType", produces = "text/json;charset=UTF-8")
+	public String selectAssetInfoHisType() {
+		String responseMap = "";
+		try {
+			List<Map<String, Object>> list = as.selectAssetInfoHisType();
+			responseMap = responsePWFactory.responseMap("true", "获取设备类型成功", list, null);
+		} catch (Exception e) {
+			responseMap = responsePWFactory.responseMap("false", "获取设备类型失败", null, null);
+		}
+		log.info(responseMap);
+		return responseMap;
+	}
+
+	/**
+	 * 
+	 * @Title: leon.chen
+	 * @Description: 资产位置流转查询
+	 * @param @param
+	 *            null
+	 * @param @return
+	 *            设定文件
+	 * @return String 返回类型
+	 * @date 2017年2月17日 上午9:23:31
+	 * url:http://192.168.0.160:8080/RFIDAssets/AssetInfoHis/selectAllAssetInfoHis
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/AssetInfoHis/selectAllAssetInfoHis", produces = "text/json;charset=UTF-8")
+	public String selectAllAssetInfoHis(String asset_Type) {
+		String responseMap = "";
+		try {
+			List<InfoHis> list = as.selectAllAssetInfoHis(asset_Type);
+			responseMap = responsePWFactory.responseMap("true", "资产流转查询成功", list, null);
+		} catch (Exception e) {
+			responseMap = responsePWFactory.responseMap("false", "资产流转查询失败", null, null);
+		}
+		return responseMap;
+	}
+
+	/**
+	 * 
+	 * @Title: leon.chen
+	 * @Description: 根据资产tag_Id位置流转查询
+	 * @param @param
+	 *            null
+	 * @param @return
+	 *            设定文件
+	 * @return String 返回类型
+	 * @date 2017年2月17日 上午9:23:31
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/AssetInfoHis/selectByTagIdInfo", produces = "text/json;charset=UTF-8")
+	public String selectByTagIdInfo(String tag_Id) {
+		String responseMap = "";
+		try {
+			List<InfoHis> list = as.selectByTagIdInfo(tag_Id);
+			responseMap = responsePWFactory.responseMap("true", "资产流转查询成功", list, null);
+		} catch (Exception e) {
+			responseMap = responsePWFactory.responseMap("false", "资产流转查询失败", null, null);
+		}
+		log.info(responseMap);
+		return responseMap;
+	}
+	
+	
+	/**
+	 * 练习
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value="/AssetInfoHis/selectAll", produces = "text/json;charset=UTF-8")
+	public String selectAll(){
+		
+		String responseMap = "";
+		
+		try {
+			List<InfoHis> list = as.selectAll();
+			responseMap = responsePWFactory.responseMap("true", "查询成功", list, null);
+			
+		} catch (Exception e) {
+			// TODO: handle exception
+			responseMap = responsePWFactory.responseMap("false", "查询失败", null, null);
+		}
+		
+		return responseMap;
+		
+	}
+	
+
+}

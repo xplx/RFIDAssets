@@ -1,0 +1,80 @@
+package com.daoben.rfid.test;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.service.AssetWarnService;
+import com.daoben.rfid.utils.AcquireTimeStamp;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+public class AssetWarnTest {
+
+	@Resource
+	private AssetWarnService warnService;
+
+	@Resource
+	private AcquireTimeStamp ats;
+
+	@Test
+	public void selectbyAssetInfo() {
+		String rfid_Labelnum = null, asset_Name = null, asset_Type = null;
+		System.out.println(warnService.selectbyAssetInfo("1"));
+		List<Map<String, String>> list = warnService.selectbyAssetInfo("1");
+		for (Map<String, String> map : list) {
+			rfid_Labelnum = map.get("RFID_LABELNUM");
+			asset_Name = map.get("ASSET_NAME");
+			asset_Type = map.get("ASSET_TYPE");
+		}
+		System.out.println(rfid_Labelnum);
+		System.out.println(asset_Name);
+		System.out.println(asset_Type);
+	}
+
+	@Test
+	public void unionAssetInfoAssetWarn() {
+		System.out.println(warnService.unionAssetInfoAssetWarn());
+	}
+
+	@Test
+	public void insertWarnInfo() {
+		AssetWarn assetWarn = new AssetWarn();
+		assetWarn.setTag_Id("4");
+		assetWarn.setWarn_Type("未授权出库");// 处理表示出库未授权
+		assetWarn.setWarn_Detil("由于急用没法来得及处理");
+		assetWarn.setWarn_Time(ats.getTimeStamp());
+		System.out.println(warnService.insertWarnInfo(assetWarn));
+	}
+
+	@Test
+	public void updateAssetWarn() {
+		AssetWarn assetWarn = new AssetWarn();
+		assetWarn.setTag_Id("4");
+		assetWarn.setWarn_Type("未授权出库");// 处理表示出库未授权
+		assetWarn.setWarn_Detil("由于急用没法来得及处理");
+		assetWarn.setWarn_Time(ats.getTimeStamp());
+		System.out.println(warnService.updateAssetWarn(assetWarn));
+	}
+
+	@Test
+	public void deleteByTag_Id() {
+
+		System.out.println(warnService.deleteByTag_Id("1"));
+
+	}
+	
+	@Test
+	public void selectbyIoLibrary() {
+
+		System.out.println(warnService.selectbyIoLibrary("22993"));
+
+	}
+}

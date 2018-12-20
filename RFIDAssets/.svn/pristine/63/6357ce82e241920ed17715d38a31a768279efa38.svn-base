@@ -1,0 +1,156 @@
+package com.daoben.rfid.reader;
+
+import org.junit.Test;
+
+/**
+ * @author wxp
+ *
+ */
+public class RFIDinterface {
+
+	// static {
+	// System.loadLibrary("RfidDLL");
+	// }
+
+	private static RFIDinterface single = null;
+
+	public static RFIDinterface getInstance() {
+		if (single == null) {
+
+			System.loadLibrary("RfidDLL");// dll 放到 C:\Windows\System32 目录下
+			// System.loadLibrary("D:\\workplace\\RFIDAssets\\RfidDLL.dll");//
+			// 使用具体路径
+			single = new RFIDinterface();
+		}
+		return single;
+	}
+
+	/*
+	 * javah -encoding UTF-8 -classpath . com.daoben.rfid.reader.RFIDinterface
+	 * 
+	 */
+	private native int OpenReader(String ip, String port);
+
+	private native void CloseReader(int hcon);// 出库阅读器
+
+	private native int ReaderOnlyTagId(int hcon);// 出库阅读器
+
+	private native RfidTagInfo ReaderTagId(int hcon);// 盘点阅读器
+
+	private native RfidTagInfo ReaderOutTagId(int hcon);// 出库
+
+	private native DiskInfo ReaderTagTest(int hcon);
+
+	private native int Add(int a, int b);
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @param state
+	 * @return 返回出库标签号
+	 */
+	public void CloseReaderExe(int hcon) {
+		CloseReader(hcon);// 关闭读写器
+	}
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @param state
+	 * @return 关闭读写器
+	 */
+	public int OpenReaderExe(String ip, String port) {
+		int hcon;
+		hcon = OpenReader(ip, port);// 读取盘点阅读器标签和电量
+		return hcon;
+	}
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @param state
+	 * @return 返回出库标签号
+	 */
+	public int ReaderOnlyTagIdExe(int hcon) {
+		int tag_id;
+		tag_id = ReaderOnlyTagId(hcon);// 读取盘点阅读器标签和电量
+		return tag_id;
+	}
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @param state
+	 * @return 返回盘点读写器的电量和标签号
+	 */
+	public RfidTagInfo ReaderTagIdExe(int hcon) {
+		RfidTagInfo rfidList;
+		rfidList = ReaderTagId(hcon);// 读取盘点阅读器标签和电量
+		return rfidList;
+	}
+
+	/**
+	 * @param ip
+	 * @param port
+	 * @param state
+	 * @return 返回出库读写器标签和电量
+	 */
+	public RfidTagInfo ReaderOutTagIdExe(int hcon) {
+		RfidTagInfo rfidList;
+		rfidList = ReaderOutTagId(hcon);// 读取盘点阅读器标签和电量
+		return rfidList;
+	}
+
+	@Test
+	public void AddTest() {
+		getInstance();
+		System.out.println(Add(1, 4));
+	}
+
+	@Test
+	public void ReaderTest() {
+		getInstance();
+		DiskInfo strList;
+		while (true) {
+			try {
+				strList = ReaderTagTest(1);
+				System.out.println("name:" + strList.name);
+				System.out.println("Serial:" + strList.serial);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
+		}
+	}
+
+	@Test
+	public void ReaderOnlyTagIdTest() {
+		getInstance();
+		int hcon = OpenReaderExe("192.168.0.215", "4001");
+		while (true) {
+			try {
+				int tag_id = ReaderOnlyTagId(hcon);
+				System.out.println("name:" + tag_id);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
+		}
+	}
+
+	@Test
+	public void ReaderTagIdTest() {
+		getInstance();
+		RfidTagInfo rfidList;
+		while (true) {
+			try {
+				rfidList = ReaderTagId(1);
+				System.out.println("tagId:" + rfidList.wTagID);
+				System.out.println("LowPow:" + rfidList.bLowPow);
+				// rfidList = ReaderOutTagId("192.168.0.218", "4002", 1);
+				// System.out.println("tagIdOut:" + rfidList.wTagID);
+				// System.out.println("LowPowOut:" + rfidList.bLowPow);
+			} catch (Exception e) {
+				System.out.println(e);
+			}
+		}
+	}
+}

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.daoben.rfid.mapper.TestPlanAndTestPlanResultMapper">
+
+	<!-- 查找所有地点 -->
+	<select id="findAllTestPlanAndTestPlanResult" resultType="TestPlanAndTestPlanResult"
+		>
+		<!-- select t.* from t_location t where t.pid =#{pid} -->
+		<!-- <if test="pid != null"> -->
+			select * from T_TEST_RESULT a,T_TESTPLAN b where a.testplan_id = b.testplan_id
+		<!-- </if> -->
+	</select>
+</mapper>

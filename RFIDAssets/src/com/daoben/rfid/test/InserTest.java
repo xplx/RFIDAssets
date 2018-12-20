@@ -1,0 +1,77 @@
+/**
+ * 
+ */
+package com.daoben.rfid.test;
+
+import java.text.SimpleDateFormat;
+import java.util.List;
+
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+import com.daoben.rfid.mapper.AssetInLibraryMapper;
+import com.daoben.rfid.mapper.ReadeIoTimeMapper;
+import com.daoben.rfid.model.AssetInLibrary;
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.ReadeIoTime;
+
+/**
+ * @author 文
+ *
+ * @date   2017年3月2日上午11:06:14
+ */
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration({ "/applicationContext.xml" })
+public class InserTest {
+	
+	@Autowired
+	private ReadeIoTimeMapper readeIoTimeMapper;
+	
+	@Autowired
+	private AssetInLibraryMapper assetInLibraryMapper;
+	
+	@Test
+	public void test(){
+		List<ReadeIoTime> findAll = readeIoTimeMapper.findAll();
+		for (ReadeIoTime readeIoTime : findAll) {
+			
+			List<AssetInLibrary> findByTagId = assetInLibraryMapper.findByTagId(readeIoTime.getTag_Id());
+		//	System.err.println(findByTagId.get(0).getRfid_Assetnum()+"-----"+findByTagId.get(0).getAsset_Name()+"-----"+findByTagId.get(0).getAsset_Type());
+			List<ReadeIoTime> findInTime = readeIoTimeMapper.findInTime(readeIoTime.getTag_Id());
+			for (ReadeIoTime in : findInTime) {
+				System.err.println("======"+new SimpleDateFormat().format(in.getTag_Time()));
+			}
+			List<ReadeIoTime> findOutTime = readeIoTimeMapper.findOutTime(readeIoTime.getTag_Id());
+			for (ReadeIoTime out : findOutTime) {
+				System.out.println(new SimpleDateFormat().format(out.getTag_Time()));
+			}
+			if(findInTime.get(0).getTag_Time().getTime()<findOutTime.get(0).getTag_Time().getTime()){
+				System.out.println(readeIoTime.getTag_Id()+"--------out");
+			}else{
+				System.out.println(readeIoTime.getTag_Id()+"--------in");
+			}
+			
+			
+		}
+		
+		
+			
+			
+		}
+
+	
+	@Test
+	public void find(){
+		AssetIoLibrary assetIoLibrary=	new AssetIoLibrary();
+		assetIoLibrary.setIo_Time(readeIoTimeMapper.getIOTime(new ReadeIoTime("", "in", "1", null) ));
+		
+		System.err.println(assetIoLibrary);		
+	}
+	
+	
+
+}

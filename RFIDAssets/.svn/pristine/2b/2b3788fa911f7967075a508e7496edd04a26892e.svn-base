@@ -1,0 +1,112 @@
+/**
+ * 
+ */
+package com.daoben.rfid.controller;
+
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.log4j.Logger;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.daoben.rfid.model.AssetInfo;
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.SelectTime;
+import com.daoben.rfid.service.AuthManagementService;
+import com.daoben.rfid.service.IntoTheLibraryService;
+import com.daoben.rfid.utils.ResponsePWFactory;
+
+/**
+ * @author 文
+ *
+ * @date   2017年2月18日上午10:04:21
+ */
+
+@Controller
+@RequestMapping("/toAuthorized")
+public class AuthManagementController {
+
+	private Logger log = Logger.getLogger(this.getClass());
+	@Resource
+	private AuthManagementService authManagementService;
+	@Resource
+	private ResponsePWFactory responsePWFactory;
+	/**
+	 * 
+	 * @Title: wen  
+	 * @Description: 跳转盘查页面  
+	 * @param @param 
+	 * @param @return      
+	 * @return String    返回类型  
+	 * @date 2017年2月17日 上午9:23:31
+	 */
+	@ResponseBody
+	@RequestMapping(value ="/toCategoryPage",produces = "text/json;charset=UTF-8")
+	public String toCategoryPage() {
+		try {
+			List<Map<String, Object>> countAssetList = authManagementService.count();
+			return responsePWFactory.responseMap("true", "获取设备盘点列表成功", countAssetList, null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return responsePWFactory.responseMap("false", "获取设备盘点列表失败哦", e, null);
+		}
+	}
+	/**
+	 * 
+	 * @Title: wen  
+	 * @Description: 跳转授权详情  
+	 * @param @param 
+	 * @param @return      
+	 * @return String    返回类型  
+	 * @date 2017年2月17日 上午9:23:31
+	 */
+	@ResponseBody
+	@RequestMapping(value ="/getAuthInfoList",produces = "text/json;charset=UTF-8")
+	public String getAuthInfoList(String assetType) throws Exception {
+		log.info(assetType);
+
+		try {
+			SelectTime st = new SelectTime(null, null, assetType,null);
+			List<Map<String, Object>> AssetIoLibraryList = authManagementService.findByAssetType(st);
+			return responsePWFactory.responseMap("true", "获取详细列表成功", AssetIoLibraryList, null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return responsePWFactory.responseMap("false", "获取详细列表失败", e, null);
+		}
+	}
+	/**
+	 * 
+	 * @Title: wen  
+	 * @Description: 修改出库授权状态
+	 * @param @param
+	 * @param @return      
+	 * @return String    返回类型  
+	 * @date 2017年2月17日 上午9:23:31
+	 */
+	@ResponseBody
+	@RequestMapping(value ="/updateOutput",produces = "text/json;charset=UTF-8")
+	public String updateOutput(String ASSETSNO,String username,AssetIoLibrary assetIoLibrary,String output){
+		try {
+			
+			assetIoLibrary.setAccredit_Time(new Timestamp(new Date().getTime()));
+			assetIoLibrary.setUser_Name(username);
+			assetIoLibrary.setAssetsno(ASSETSNO);
+			assetIoLibrary.setOutput(Integer.parseInt(output));
+			int i = authManagementService.updateOutput(assetIoLibrary);
+			return responsePWFactory.responseMap("true", "修改成功", output, null);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return responsePWFactory.responseMap("false", "修改失败", e, null);
+		}
+		
+	}
+}

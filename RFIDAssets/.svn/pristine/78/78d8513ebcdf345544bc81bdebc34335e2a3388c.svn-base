@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.daoben.rfid.mapper.AssetWarnMapper">
+
+	<resultMap id="BaseResultMap" type="AssetWarn">
+		<id column="TAG_ID" property="tagId" />
+		<result column="WARN_TYPE" property="warnType" />
+		<result column="WARN_TIME" property="warnTime" />
+		<result column="WARN_DETIL" property="warnDetil" />
+	</resultMap>
+
+	<!-- 查询报警的基本信息 -->
+	<select id="unionAssetInfoAssetWarn" resultType="WarnInfo"
+		parameterType="java.lang.String">
+		SELECT
+		ai.rfid_labelnum,ai.asset_name,ai.original_value,ai.net_value,
+		aw.warn_type,io.output,aw.warn_time,aw.warn_detil,aw.tag_id
+		FROM
+		asset_info
+		ai,asset_warn aw,
+		ASSET_IO_LIBRARY io
+		WHERE
+		ai.tag_id=aw.tag_id and
+		ai.tag_id=io.tag_id and
+		aw.warn_type=#{warn_Type}
+	</select>
+
+	<!-- 查询报警的基本信息 -->
+	<select id="unionAssetTagInfoAssetWarn" resultType="WarnInfo"
+		parameterType="SelectTime">
+		SELECT
+		ai.rfid_labelnum,ai.asset_name,ai.original_value,ai.net_value,
+		aw.warn_type,ati.tag_lose output,aw.warn_time,aw.warn_detil,aw.tag_id
+		FROM
+		asset_info
+		ai,asset_warn aw,
+		ASSET_IO_LIBRARY io,
+		asset_tag_info ati
+		WHERE
+		ai.tag_id=aw.tag_id and
+		ai.tag_id=io.tag_id AND
+		aw.tag_id=ati.tag_id AND
+		aw.warn_type=#{warn_Type}
+		AND to_char(aw.warn_time,'YYYYMMDD')=#{beginTime}
+	</select>
+
+	<!-- 查询报警的资产基本信息 -->
+	<select id="selectbyAssetInfo" resultType="Map" parameterType="java.lang.String">
+		SELECT *
+		FROM asset_info ai
+		WHERE ai.tag_id=#{tag_id}
+	</select>
+
+	<!-- 查询丢失报警的资产基本信息 -->
+	<select id="selectbyLoseAssetInfo" resultType="int">
+		SELECT count(*)
+		FROM asset_warn aw,asset_tag_info ati
+		WHERE aw.tag_id=ati.tag_id AND ati.tag_lose=0
+	</select>
+
+	<!-- 查询出库报警的资产基本信息 -->
+	<select id="selectbyIoLibrary" resultType="int" parameterType="java.lang.String">
+		SELECT COUNT(aio.tag_id) COUNT
+		FROM asset_io_library aio
+		WHERE
+		aio.tag_id=#{tag_id}
+		AND aio.inoutlibrary='out' AND aio.output='0'
+	</select>
+
+	<!-- 查询所有出库报警的基本信息 -->
+	<select id="selectAllIoLibrary" resultType="AssetIoLibrary"
+		parameterType="java.lang.String">
+		SELECT aio.tag_id,aio.devicename
+		FROM asset_io_library
+		aio
+		WHERE
+		aio.inoutlibrary='out' AND aio.output='0'
+	</select>
+
+
+
+	<insert id="insertWarnInfo" parameterType="AssetWarn">
+		insert into ASSET_WARN
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="tag_Id != null">
+				TAG_ID,
+			</if>
+			<if test="warn_Type != null">
+				WARN_TYPE,
+			</if>
+			<if test="warn_Time != null">
+				WARN_TIME,
+			</if>
+			<if test="warn_Detil != null">
+				WARN_DETIL,
+			</if>
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="tag_Id != null">
+				#{tag_Id},
+			</if>
+			<if test="warn_Type != null">
+				#{warn_Type},
+			</if>
+			<if test="warn_Time != null">
+				#{warn_Time},
+			</if>
+			<if test="warn_Detil != null">
+				#{warn_Detil},
+			</if>
+		</trim>
+	</insert>
+
+	<update id="updateAssetWarn" parameterType="AssetWarn">
+		update ASSET_WARN
+		<set>
+			<if test="warn_Time != null">
+				WARN_TIME = #{warn_Time},
+			</if>
+			<if test="warn_Detil != null">
+				WARN_DETIL = #{warn_Detil},
+			</if>
+		</set>
+		where TAG_ID = #{tag_Id}
+	</update>
+
+	<!-- 出库读写器触发出库 -->
+	<update id="updateOutLibrary" parameterType="java.lang.String">
+		UPDATE
+		asset_io_library aio
+		SET
+		aio.inoutlibrary = 'out',
+		aio.io_time=systimestamp
+		WHERE aio.tag_id=#{tag_Id}
+	</update>
+	
+	<!-- 出库读写器触发出库 -->
+    <update id="updateInLibrary" parameterType="java.lang.String">
+        UPDATE
+        asset_io_library aio
+        SET
+        aio.inoutlibrary = 'in',
+        aio.io_time=systimestamp
+        WHERE aio.tag_id=#{tag_Id}
+    </update>
+
+	<delete id="deleteByTag_Id" parameterType="java.lang.String">
+		delete from
+		ASSET_WARN
+		where TAG_ID = #{tag_Id}
+	</delete>
+
+	<update id="updateOUTPUT" parameterType="AssetIoLibrary">
+		UPDATE ASSET_IO_LIBRARY
+		a set a.OUTPUT=#{output},
+		a.ACCREDIT_TIME=systimestamp,
+		a.USER_NAME=#{user_Name}
+		where a.tag_id=#{tag_Id}
+	</update>
+</mapper>

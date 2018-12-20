@@ -1,0 +1,48 @@
+package com.daoben.rfid.common.push;
+
+import cn.jiguang.common.ClientConfig;
+import cn.jiguang.common.resp.APIConnectionException;
+import cn.jiguang.common.resp.APIRequestException;
+import cn.jpush.api.JPushClient;
+import cn.jpush.api.push.PushResult;
+import cn.jpush.api.push.model.Platform;
+import cn.jpush.api.push.model.PushPayload;
+import cn.jpush.api.push.model.audience.Audience;
+import cn.jpush.api.push.model.notification.Notification;
+
+public class JPushManager {
+	public void warnMsgSendPush(String msg ){
+		ClientConfig clientConfig = ClientConfig.getInstance();
+	    JPushClient jpushClient = new JPushClient(Constants.MASTER_SECRET,Constants.APPKEY, null, clientConfig);
+	    PushPayload payload = buildPushObject_all_all_alert(msg);
+	    try {
+	        PushResult result = jpushClient.sendPush(payload);
+	    } catch (APIConnectionException e) {
+	    	
+	    } catch (APIRequestException e) {
+	    	
+	    }
+	}
+	public void warnMsgSendPushOnly(String name,String msg){
+		ClientConfig clientConfig = ClientConfig.getInstance();
+	    JPushClient jpushClient = new JPushClient(Constants.MASTER_SECRET,Constants.APPKEY, null, clientConfig);
+	    PushPayload payload = buildPushObject_all_alias_alert(name,msg);
+	    try {
+	        PushResult result = jpushClient.sendPush(payload);
+	    } catch (APIConnectionException e) {
+	    	
+	    } catch (APIRequestException e) {
+	    	
+	    }
+	}
+	public static PushPayload buildPushObject_all_all_alert(String msg) {
+	    return PushPayload.alertAll(msg);
+	}
+	public static PushPayload buildPushObject_all_alias_alert(String name , String msg) {
+	        return PushPayload.newBuilder()
+	                .setPlatform(Platform.all())
+	                .setAudience(Audience.alias(name))
+	                .setNotification(Notification.alert(msg))
+	                .build();
+	    }
+}

@@ -1,0 +1,13 @@
+package com.daoben.rfid.model;
+
+import java.sql.Timestamp;
+
+public class AssetIoNumber {
+
+	private Timestamp everyday_time;
+	private int io_sum_count;
+	private int warn_sum_count;
+	private int differ_sum_count;
+	
+
+}

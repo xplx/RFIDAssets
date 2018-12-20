@@ -1,0 +1,40 @@
+package com.daoben.rfid.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import com.daoben.rfid.model.AssetIoLibrary;
+import com.daoben.rfid.model.AssetWarn;
+import com.daoben.rfid.model.SelectTime;
+import com.daoben.rfid.model.WarnInfo;
+
+public interface AssetWarnMapper {
+
+	public List<Map<String, String>> selectbyAssetInfo(String tag_ID);
+
+	public List<WarnInfo> unionAssetInfoAssetWarn(String warn_Type);
+
+	public List<WarnInfo> unionAssetTagInfoAssetWarn(SelectTime warn_Type);
+
+	public String selectWarnLoseTagId(SelectTime selectTime);
+
+	public int insertWarnInfo(AssetWarn warn);
+
+	public int updateAssetWarn(AssetWarn warn);
+
+	public int updateOutLibrary(String tag_Id);
+
+	public int updateInLibrary(String tag_Id);
+
+	public int deleteByTag_Id(String tag_Id);
+
+	public int selectbyIoLibrary(String tag_Id);
+
+	public int selectLoseSumCountWarn(String warn_Time);
+
+	public int selectbyLoseAssetInfo();
+
+	public List<AssetIoLibrary> selectAllIoLibrary();
+
+	public int updateOUTPUT(AssetIoLibrary assetIoLibrary);
+}
